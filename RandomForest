@@ -1,0 +1,141 @@
+---
+title: "RandomForest"
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Implementing Random Forest in R using caret package
+
+In this example, we train a random forest model using caret package. Also, we use parameterst and perform grid search to tune the parameters
+
+#### Load required packages
+
+```{r}
+
+library(caret)
+library(mlbench) #for using the Sonar dataset
+library(randomForest)
+
+
+```
+
+
+#### Import data required
+
+```{r}
+data(Sonar)
+dim(Sonar) # has 208 observations, 61 variables
+names(Sonar)
+
+#All the predictors are continuous variables
+str(Sonar) 
+
+#check distribution of the target variable 
+summary(Sonar$Class) # M for metal, R for rock
+
+
+```
+
+
+#### Data Preparation, other initial steps
+
+```{r}
+#set up the predictor variables
+X =Sonar[,c(1:60)]
+Y =Sonar$Class
+
+seed=7
+
+```
+
+#### Option 1 - we create a random forest model with the default parameters
+No tuning is done, the model is trained using the default parameters
+
+```{r}
+
+default_training_controls=trainControl(method="repeatedcv",number=10,repeats=3)
+set.seed(seed)
+default_metric ="Accuracy"
+default_mtry =sqrt(ncol(X))
+default_tuneGrid = expand.grid(.mtry=default_mtry)
+
+default_rf_model=train(y=Y,x=X,method="rf",metric=default_metric,tuneGrid=default_tuneGrid)
+
+#check model results
+print(default_rf_model)
+
+```
+
+#### Option 2 - using random search to tune mtry
+mtry parameter is tuned, but we search randomly for the optimal value
+  
+```{r}
+#One tuning strategy is that we randomly search for values for the parameters within a range
+random_training_controls=trainControl(method="repeatedcv",number=10,repeats=3,search="random")
+set.seed(seed)
+
+randomsearch_rf_model =train(y=Y,x=X,method="rf",metric=default_metric,tuneLength = 15,trControl = random_training_controls)
+
+#print and plot results
+print(randomsearch_rf_model)
+plot(randomsearch_rf_model)
+```
+
+#### Option 3 - using Grid search to obtain the optimal value of mtry
+mtry parameter is tuned, and we used grid search to search through a set combination of values 
+
+```{r}
+gridsearch_training_controls=trainControl(method="repeatedcv",number=10,repeats=3,search="grid")
+set.seed(seed)
+
+gridsearch_tuneGrid=expand.grid(.mtry=c(1:15))
+
+gridsearch_rf_model=train(y=Y,x=X,method="rf",metric=default_metric,tuneGrid = gridsearch_tuneGrid,trControl = gridsearch_training_controls)
+
+print(gridsearch_rf_model)
+plot(gridsearch_rf_model)
+
+
+```
+
+#### Option 4 - use tuneRF from the randomforest package for tuning parameters
+mtry can be tuned used the tuneRF function from the randomforest package
+
+```{r}
+best_mtry=tuneRF(x=X,y=Y,stepFactor = 1.5,improve=0.00005,ntree=500)
+print(best_mtry) # 10 turns out to be the best value for mtry
+plot(best_mtry)
+
+```
+
+#### Option 5 - manually tune parameters 
+The parameters can be tuned manually by writing code for that purpose. This code is then used with the caret package
+
+
+```{r}
+manual_training_controls=trainControl(method="repeatedcv",number=10,repeats=3,search="grid")
+manual_tuneGrid=expand.grid(.mtry=c(sqrt(ncol(X))))
+model_list=list()
+
+for(n_tree in c(500,1000,1500,2000))
+{
+  set.seed(seed)
+  manual_fit=train(y=Y,x=X,method="rf",metric=default_metric,tuneGrid = manual_tuneGrid,trControl = manual_training_controls,ntree=n_tree)
+  key=toString(n_tree)
+  model_list[[key]]=manual_fit
+
+}
+
+#compare results
+manual_results=resamples(model_list)
+summary(manual_results)
+dotplot(manual_results)
+
+```
+
+
+
+
