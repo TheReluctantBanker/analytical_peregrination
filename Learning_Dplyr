@@ -1,0 +1,151 @@
+---
+title: "R_For_DataScience_DplyrDemo"
+author: "Sudha"
+date: "August 25, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+####Demonstration exercise from the text book R for Data Science
+####Various ways of working with data using the dplyr function
+
+####using the new york flights data - the data frame called  "flights" from the package nycflights13 - has data on the flights which departed from NY in 2013
+
+
+####loading the required packages and data 
+```{r}
+library(dplyr)
+library(tidyverse)
+
+library(nycflights13)
+
+
+```
+
+####There are 6 important verbs in the dplyr package which will help working with data
+
+#### Pick observations by their values (filter()).
+#### Reorder the rows (arrange()).
+#### Pick variables by their names (select()).
+#### Create new variables with functions of existing variables (mutate()).
+#### Collapse many values down to a single summary (summarize()).
+
+####the above verbs can be used with group_by to to change the scope of the function from the entire data to operating it on group by group
+
+
+####examples for filter command
+```{r}
+#example -1 using filter to select rows meeting specific, simple conditions
+
+#we can select all flights on January 1st
+filter(flights,month==1, day ==1)
+
+#get the flights on the 25th of december 
+filter(flights,month ==12 & day ==25)
+
+#finds all flights that departed in November or December
+#you will see that the logical OR operator is used for the above
+filter(flights,month==11 || month ==12)
+
+#you can use the %in% operator to achieve the equivalent use of OR operator
+filter(flights, month %in% c(11,12))
+
+#learn to simplify the use of comparison operators to get the results you want 
+#if you wanted to find flights that weren't delayed (on arrival or departure) by more than two hours, 
+
+filter(flights, dep_delay<=120 & arr_delay<=120)
+
+#exercise 1-Had an arrival delay of two or more hours
+filter(flights,arr_delay >=120)
+
+#exercise 2  find all the flights that Flew to Houston (IAH or HOU)
+filter(flights, dest %in% c("IAH","HOU"))
+
+#exercise 3-Were operated by United, American, or Delta
+filter(flights,carrier %in% c("UA","AA","DL"))
+
+#exercise 4-Departed in summer (July, August, and September)
+filter(flights, month %in% c(7,8,9))
+
+#exercise 5-Arrived more than two hours late, but didn't leave late
+filter(flights,arr_delay>120 & dep_delay==0)
+
+#exercise 6-Were delayed by at least an hour, but made up over 30 minutes in flight
+filter(flights,dep_delay>=60 , arr_delay < -30)
+
+#exercise 7-Departed between midnight and 6 a.m. (inclusive)
+filter(flights,hour %in% c(1,2,3,4,5,6))
+
+#example for using the between operator - filter flights operating in the months
+#between july and september
+filter(flights,between(month,7,9))
+
+#to count how many flights have missing dep_time
+nrow(filter(flights,is.na(dep_time)))
+
+#to find which variables having missing values
+sapply(flights,function(x) is.na(x))
+
+
+```
+
+####Examples for the arrange() command
+
+```{r}
+#example 1 - arrange flights by the year, month & date of departure
+arrange(flights,year,month,day)
+
+#you can use desc to sort a column in descending order
+#for example - sort the flights in  the descending order of arr_delay
+arrange(flights,desc(arr_delay))
+
+#exercise -How could you use arrange() to sort all missing values to the start? #(Hint: use is.na().)
+
+#exercise -Find the flights that left earliest.
+arrange(flights,hour)
+
+
+#exercise -Sort flights to find the fastest flights.
+select(arrange(flights,air_time),flight,air_time)
+
+#exercise -Which flights traveled the longest?
+select(arrange(flights,desc(distance)),flight,distance,air_time)
+
+#exercise -Which traveled the shortest?
+select(arrange(flights,distance),flight,distance,air_time)
+
+
+```
+
+####Next up - example for the select statement
+####useful for selecting different columns from the table 
+
+```{r}
+#example 1  -select specific columns
+select(flights,flight,origin,dest)
+
+#example 2- select columns between a start column and end column
+#here we select all columns between year and day
+select(flights,year:day)
+
+#example 3-Select all columns except those from year to day (inclusive)
+select(flights,-(year:day))
+
+#starts_with helper function -to select columns starting with specific name, pattern
+select(flights,starts_with("air"))
+
+#ends_with helper function -
+select(flights,ends_with("time"))
+
+#"contains" helper function
+select(flights,contains("delay"))
+
+
+```
+
+
