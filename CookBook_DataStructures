@@ -1,0 +1,183 @@
+---
+title: "RCookbook_DataStructures"
+author: "Sudha"
+date: "November 23, 2017"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+#### R Cookbook recipes for the chapter relating to data structures
+
+
+
+#### concept of mode - how different data structures are stored in memory
+
+```{r}
+
+#how is a numeric variable stored
+example_number=pi
+mode(example_number)
+
+#how is a numeric vector stored
+vector_example =c(1,2,3,4)
+mode(vector_example)
+
+#how is a logical vector stored
+example_logical_vector=TRUE
+mode(example_logical_vector)
+
+#how is a factor stored
+example_factor=as.factor(c("blue","green","red"))
+example_factor
+mode(example_factor)
+
+#how is a list stored
+example_list=list("a",1,TRUE)
+example_list
+mode(example_list)
+
+#how is a dataframe stored
+data(iris)
+mode(iris) #a dataframe is stored as a list
+
+#how is a function stored
+mode(print)
+
+#how is date stored
+today_date=Sys.Date()
+today_date
+mode(today_date)
+
+
+```
+
+#### concept of class -the abstraction of the data type
+
+```{r}
+
+#class of a vector  depends upon the type of data that the vector contains
+vector_example
+class(vector_example)
+
+#class of a number
+example_number
+class(example_number)
+
+#class of a date variable 
+today_date
+class(today_date)
+
+#class of a list 
+example_list
+class(example_list)
+
+#class of a factor variable
+example_factor
+class(example_factor)
+
+#class of a complex number
+example_complex_number =2+3i
+example_complex_number
+class(example_complex_number)
+
+```
+
+#### Scalars in R - are just a special case of vectors! Scalar is a vector of length 1
+
+```{r}
+
+example_scalar=50
+example_scalar
+
+example_scalar[1] #this is same as example_scalar
+example_scalar[2] # this will return NA
+
+#there is a built in scalar called pi =3.14
+pi
+pi[1] # same as pi
+pi[3] #this will return NA
+
+
+```
+
+#### Recipes with respect to vectors
+
+```{r}
+
+#vectors can have a name property
+
+vector_example =c('sudha','sujay','bhuvana','sai')
+names(vector_example) =c("self","friend","mother","brother")
+
+vector_example
+#refer to a vector element using the name
+vector_example["self"]
+vector_example["mother"]
+
+#what is the length of the vector
+length(vector_example)
+
+#how to append new elements to a vector
+vector_example=c(vector_example,"Raji")
+#vector_example has got updated
+vector_example
+
+#here is an example for how one vector can be appended to another vector
+vector_example2=c("a","b","c")
+vector_example =c(vector_example,vector_example2)
+#see the contents of vector_example
+vector_example
+
+
+```
+
+#### Basics of matrices as data structures
+A matrix can be created from a vector by giving it dimensions!
+```{r}
+
+
+example_for_vector =c(2,2,3,3,4,4,5,5,6,6)
+example_for_vector
+
+#lets give dimensions for this vector and it gets transformed to a matrix once dimensions are assigned to it
+#giving dimensions of 5 rows and 2 colums
+dim(example_for_vector) =c(5,2)
+#now look at the result
+example_for_vector #its become a matrix with 5 rows, 2 columns
+
+```
+
+
+#### Basics of arrays as data structures
+
+Similar to matrices, we can create arrays by taking a vector and then giving dimensions to it.
+```{r}
+
+example_for_array=seq(1:24) # initialize a numeric vector
+#now giving dimensions to the array
+dim(example_for_array) =c(2,2,6)  
+#Lets look at the contents of the array created now
+example_for_array
+class(example_for_array)# it is an array
+
+
+#another example
+D=1:12
+#look at D -it is a numeric vector
+dim(D) =c(2,3,2)
+#now look at D
+D
+
+```
+
+
+
+
+
+
