@@ -1,0 +1,220 @@
+---
+title: "Demonstration_RandomForest"
+author: "Sudha"
+date: "November 18, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+#### Demonstration of code for Random forest implementation 
+
+#### References -https://www.youtube.com/watch?v=dJclNIN-TPo
+
+
+#### load required librares
+
+```{r}
+
+library(caret)
+library(randomForest)
+
+```
+
+#### Dataset used for this exercise is CTG -foetal heart rate abnormality assessment related data
+
+```{r}
+
+#load the dataset
+input_data=read.csv(file="C://Users//sudha.sundaram//Documents//R//datasets//CTG.csv",header=TRUE)
+
+#check dimensions of  the dataset
+dim(input_data) # has 2126 rows, 22 variables 
+
+#check variable names
+names(input_data)
+
+#check str of the dataset
+str(input_data)
+
+#check summary statistics for each variable
+summary(input_data)
+
+#NSP is the outcome variable -but it has not been loaded as a dataset
+#check the number of factor levels for this variable 
+summary(as.factor(input_data$NSP))
+
+#changing the datatype for the factor variable NSP into a categorical variable
+input_data$NSP=as.factor(input_data$NSP)
+
+#get the proportion for the three classes to get an idea about the class distribution 
+prop.table(table(input_data$NSP)) # class 1 is 77% , class 2 is 13.8% ,  class 3 is 8.27%
+
+
+```
+
+
+##### Doing data partition and creating training data and test data
+
+
+```{r}
+set.seed(123)
+train_labels=createDataPartition(y=input_data$NSP,times=1,p=0.7,list=FALSE) # a matrix with 70% of the dim size as rows  and 1 columns
+
+training_data=input_data[train_labels,]
+test_data=input_data[-train_labels,]
+
+#check sizes of the training data and test data
+dim(training_data) # has 1490 rows
+dim(test_data) # has 636 rows
+
+
+```
+
+#### training a random forest model 
+
+```{r}
+
+#we use the randomForest function from the randomForest package for training the model 
+rf=randomForest(formula=NSP~.,data=training_data)
+
+
+```
+
+
+#### model results analysis and intepretation
+
+```{r}
+
+#get the model results
+print(rf) # shows the model, number of trees built, no. of variables used at each split , the OOB estimate of error as 5.84% and then the confusion matrix results 
+
+#to check the model results in greater detail, get the attributes
+attributes(rf)
+
+#now get the confusion matrix attribute
+rf$confusion
+
+#get the model built or the model called
+rf$call
+
+#to get the type of random forest model - whether classification or regression 
+rf$type
+
+#to get the classes predicted by the model 
+#this will be  a big output -one for each row of the training data 
+rf$predicted
+
+#to get the OOB error rate for each class for each three  that was built
+rf$err.rate # long output 
+
+#to  get the tree parameters -ntree and mtry
+rf$ntree
+rf$mtry
+
+#get a plot of how the OOB error changes as number of trees increases
+#from the plot, we can see that the OOB sort of levels of after ntree=300. Hence, it is better option to consider building 300 trees and need not build 500 trees
+plot(rf)
+
+
+```
+
+#### use predict function to make predictions 
+
+
+```{r}
+
+predictions_trainingdata=predict(rf,newdata=training_data)
+head(predictions_trainingdata)
+
+
+#now get the confusion matrix from caret package and other associated metrics
+
+#first argument is the predictions, and second argument is the training data actual label/class
+confusionMatrix(predictions_trainingdata,training_data$NSP)
+
+#now we actually make predictions using the test data
+predictions_testingdata=predict(rf,newdata = test_data)
+confusionMatrix(predictions_testingdata,test_data$NSP)
+
+
+```
+
+#### parameter tuning
+
+```{r}
+
+#using tuneRF to tune the number of variables to use for splitting mtry
+
+t1 =tuneRF(x=training_data[,-22],y=training_data$NSP,stepFactor = 1,improve=0.05,plot=TRUE)
+t1
+
+#tryining to tune again by reducing the step factor
+t2=tuneRF(x=training_data[,-22],y=training_data$NSP,stepFactor = 0.5,improve=0.05,plot=TRUE)
+t2 # you can see how the OOB error comes down from 7.4% to 6.4% when mtry changes from 2 to 16
+
+
+```
+
+#### re-running the random forest model using the mtry =8 as the tuned parameter
+
+```{r}
+
+rf2=randomForest(formula=NSP~.,data=training_data,ntree=300,mtry=8,importance=TRUE,proximity=TRUE)
+
+#now checking the results of the revised model that has been build
+print(rf2) # we can see that the OOB error has come down to 5.5% from 5.84%, classification error for class 3 shows improvement 
+
+#now checking the confusion matrix metrics for test data using the second random forest model 
+predictions_testingdata2=predict(rf2,newdata=test_data)
+confusionMatrix(predictions_testingdata2,test_data$NSP)
+
+```
+
+##### some plots , outputs to analyze the random forest model that has been built
+
+```{r}
+
+#if we want to get a sense of the number of nodes that each tree has in the random forest
+
+#about 80 trees actually have around 80 nodes in each tree
+hist(treesize(rf2),main="distribution of number of nodes",col="blue")
+
+#getting the variable importance plot
+varImpPlot(rf2,sort=TRUE)
+
+#get the variable importance values 
+importance(rf2)
+
+#to find out how many variables are actually used in tree construction
+#the result shows how many times each variable occured in the random forest 
+varUsed(rf2)
+
+#get the partial dependence plot - which shows the marginal effect of a variable on the class probability 
+
+#how to intepret the partial dependence plot -the higher the positive value on the y axis, greater is the propensity to predict the particular class
+
+#in this plot example, when value of ASTV is around 80, the propensity to predict 1 is low, but when ASTV is less than 40 - the propensity to predict 1 is high
+
+partialPlot(rf2,pred.data=training_data,x.var=ASTV,which.class="1")
+
+
+#extract detail of a single tree from the forest 
+
+#tips in intepreting the output of getTree - the left branch, right branch are provided
+#the variable used for splitting and the split point is also provided
+
+#status =1 means it is a non-terminal node, status =-1 means it is a terminal node
+#and the prediction provides the class predicted by the terminal node (i.e, node with status =-1)
+getTree(rfobj=rf2,k=1,labelVar = TRUE)
+
+#get a multi-dimensional scaling plot of the proximity matrix
+MDSplot(rf=rf2,fac=training_data$NSP)
+
+```
+
+
