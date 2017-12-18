@@ -1,0 +1,62 @@
+#Practice App 1 - R studio shiny tutorial
+#user can select a number using a slider input and then generate a histogram of random numbers using that input
+
+library(shiny)
+
+
+#define the ui function
+ui <-fluidPage(
+  
+  
+  #creating a slider input 
+  sliderInput(inputId ="number",label="Choose a number",value=100,min=1,max=1000),
+  
+  #provide a default title and user can change it if he wants 
+  #but this will be made non-reactive, will not react immediately
+  textInput(inputId="plot_title",label="Write a title", value="Random number generation histogram"),
+  
+  #plotting the output
+  plotOutput("hist") ,
+  
+  #providing a verbatim output - summary statistics 
+ verbatimTextOutput("stats")
+  
+  )
+
+
+
+#define the server function 
+server <-function(input,output)
+  
+{
+  
+  #create a reactive expression to hold the data object
+  data <- reactive(
+     {
+    rnorm(input$number)
+   }
+    )
+  
+  output$hist <-renderPlot( 
+    {
+    axis_label="number"
+    hist(data(),main=isolate({input$plot_title}),xlab=axis_label)
+    }
+  )
+    
+  output$stats <-renderPrint( 
+    {
+      #title ="histogram"
+      #axis_label="number"
+      summary(data())
+    }
+  )
+  
+   }
+
+
+
+
+#execute the shiny app
+
+shinyApp(ui=ui,server=server)
