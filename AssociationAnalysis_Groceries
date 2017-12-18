@@ -1,0 +1,162 @@
+---
+title: "AssociationAnalysis_Groceries"
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Implementing association analysis in R
+This demonstrates association analysis in R using Groceries transaction dataset as sample
+
+
+
+####Load required libraries
+
+```{r}
+
+library(arules)
+library(arulesViz)
+
+```
+
+
+#### Import data
+The code assumes that the input data is already in the transactions data format as required by arules
+
+```{r}
+
+data("Groceries")
+
+```
+
+#### Exploring the data
+Item frequency plot can be used to explore the data - to identify those items that are frequently part of the baskets
+
+```{r}
+
+#summary function on the transaction dataset for the high level summary
+summary(Groceries)
+
+
+#obtaining the frequency of the items
+frequency_data =itemFrequency(Groceries,type="absolute") # this is a named vector
+#the frequency data can be captured and saved in a dataframe for analysis 
+frequency_dataframe=data.frame(product_name=names(frequency_data),transaction_frequency=frequency_data,row.names=NULL)
+
+#obtaining frequency plot
+itemFrequencyPlot(Groceries,topN=20,type="absolute")
+
+#obtaining frequency plot - relative proportion
+itemFrequencyPlot(Groceries,topN=20,type="relative")
+
+
+```
+
+
+
+
+#### Discover association rules on the data
+
+Using parameters for support, confidence and rule length
+```{r}
+
+#set up parameter list which can be updated when required
+parameter_list=list(supp=0.001,conf=0.8,maxlen=3)
+
+#discover rules using apriori function
+groceries_rules=apriori(Groceries,parameter=parameter_list) # 29 rules are generated
+
+#show the top 10 rules 
+options(digits=2)
+inspect(groceries_rules[1:10])
+
+#get the summary of the rules generated
+summary(groceries_rules)
+
+```
+
+#### Manipulating rules with options - sort rules based on confidence, lift
+For example, you can sort rules by descending order of confidence or lift. Or rules having minimum length of maximum length
+
+```{r}
+
+rules_sorted_by_confidence=sort(groceries_rules,by="confidence",descending=TRUE)
+inspect(rules_sorted_by_confidence[1:5])
+
+rules_sorted_by_lift=sort(groceries_rules,by="lift",descending=TRUE)
+inspect(rules_sorted_by_lift[1:5])
+
+```
+
+#### Pruning rules - removing redundant rules, which are subset of other rules
+Nested rules can be pruned away as redundant rules
+
+```{r}
+
+subset_matrix <- is.subset(groceries_rules, groceries_rules)
+subset_matrix[lower.tri(subset_matrix, diag=T)] <- NA
+redundant_rules <- colSums(subset_matrix, na.rm=T) >= 1
+pruned_rules <- groceries_rules[!redundant_rules]
+
+inspect(pruned_rules)
+
+
+
+```
+
+#### Looking for specific rules with specific items
+We can look for rules having specific items in either the LHS or the RHS
+
+```{r}
+#for this additional parameters need to be supplied when we run the apriori function
+
+#in this example, we look for rules where whole milk is on the rhs, and where lhs can be anything
+groceries_rules_revised=apriori(
+  data=Groceries,
+  parameter=parameter_list,
+  appearance=list(default="lhs",rhs="whole milk")
+  ,control=list(verbose=FALSE)
+  )
+
+inspect(groceries_rules_revised[1:10])
+
+
+#in this example, we look for rules where whole milk is in the lhs and rhs can be anything
+parameter_list_updated =list(supp=0.001,conf=0.15) # this is updated since no rules are obtained with earlier parameters
+
+groceries_rules_revised2=apriori(
+  data=Groceries,
+  parameter=parameter_list_updated,
+  appearance=list(lhs="whole milk",default="rhs")
+  ,control=list(verbose=FALSE)
+  )
+
+inspect(groceries_rules_revised2) #set of 9 rules
+
+```
+
+#### Visualize association rules
+Association rules can be visualized using plots like network diagrams or parallel coordinate plots
+
+```{r}
+
+#plot rules in terms of their metrics - provides heatmap like output with scatterplot
+plot(groceries_rules,measure=c("support","confidence"),shading="lift")
+
+
+#plot rules using graph option
+plot(groceries_rules,method="graph",shading=NA,engine='interactive')
+
+#plot rules as a grouped matrix
+plot(groceries_rules,method="grouped")
+
+#another variant of the rules in matrix form
+plot(groceries_rules,method="matrix",measure=c("lift","confidence"))
+
+#plot rules using parallel coordinate plots
+plot(groceries_rules,method="paracoord")
+
+```
+
