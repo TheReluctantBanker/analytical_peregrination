@@ -1,0 +1,22 @@
+## R Markdown
+
+####Example scripts for cross validation 
+
+```{r}
+
+library(caret)
+data(iris)
+
+set.seed(100)
+folds =createFolds(y=iris$Species,k=10,list=TRUE)
+
+#list the folds
+folds
+
+decision_tree =trainControl(method="cv",index=folds,classProbs = TRUE,savePredictions = TRUE)
+#list the index of the folds 
+decision_tree$index
+
+
+
+```
