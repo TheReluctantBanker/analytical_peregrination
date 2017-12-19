@@ -1,0 +1,187 @@
+---
+title: "Implementing_GBM"
+author: "Sudha"
+date: "December 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Implementing the gradient boosting machine technique using caret package in R
+The loan data from analyticsvidya.com is used for training the model
+
+#### Import required libraries
+
+```{r}
+
+library(caret)
+library(randomForest) # using na.roughfix to impute missing values
+library(pROC) # for calculating ROC, AUC
+
+```
+
+#### Import training data and test data
+
+```{r}
+
+input_data=read.csv(file="C://Users//sudha//Documents//R//datasets//Loan//training_data.csv",header=TRUE)
+
+test_data =read.csv(file="C://Users//sudha//Documents//R//datasets//Loan//test_data.csv",header=TRUE)
+
+#quick checks
+dim(input_data)
+dim(test_data)
+
+str(input_data)
+names(input_data)
+
+```
+
+#### Treatment of missing values
+There are some observations having missing values. For this example, we use na.roughfix to impute missing values
+```{r}
+
+input_data=na.roughfix(input_data)
+test_data=na.roughfix(test_data)
+
+```
+
+
+
+
+#### Data Partition of the input data into 80% training data and 10% validation dataset
+We use data partition from caret to split the input data into training data and validation data
+The trained model will be used on the test data
+
+
+```{r}
+set.seed(100)
+train_labels=createDataPartition(y=input_data$Loan_Status,times=1,p=0.8,list=FALSE)
+
+#create training_data
+training_data=input_data[train_labels,c(2:13)] # ignoring the loan_id column
+
+#create validation data
+validation_data=input_data[-train_labels,c(2:13)]
+
+
+```
+
+
+
+#### Parameter tuning
+Parameters for the GBM technique are tuned as part of the caret package
+Since training data is relatively small, we will use 5 fold cross validation with 3 repeats and ROC as the evaluation metric
+
+The parameters that can be tuned for GBM
+(1)Interaction.depth -the number of leaves in tree. default is 1
+(2) shrinkage (learning rate), the smaller the number, the better th epredictive value, the more the trees required and higher the computational cost. Default is 0.001
+
+(3) n.minobsinnode -minimum number of samples in tree's terminal node. Default is 10
+(4) n.trees -when shrinkage is smaller, there will be more trees built
+	
+
+
+
+```{r}
+#set the parameters for the resampling method to use
+fitControl=trainControl(method="repeatedcv",number=5,repeats=3,classProbs = TRUE,summaryFunction = twoClassSummary,search="grid")
+
+#creating grid
+gbm_grid =expand.grid(
+                      interaction.depth=c(1:5),
+                      n.trees=c(1:50)*50,
+                      shrinkage =seq(from=0.005, to =0.05, by =0.005),
+                      n.minobsinnode =10
+)
+
+```
+
+#### Model Training 
+Training the model using caret package's train function. ROC is used as the evaluation metric
+
+```{r}
+gbm_model=train(Loan_Status~.,data=training_data,method="gbm",metric="ROC",trControl = fitControl,tuneGrid = gbm_grid,verbose=TRUE)
+
+```
+
+#### Looking at the model related results
+Some outputs from the trained model
+
+```{r}
+gbm_model$finalModel
+
+#gives the variable importance 
+summary(gbm_model)
+
+#the parameters of the best model - result of the grid search
+gbm_model$bestTune
+
+#get the model metrics of the best model 
+gbm_model$results[row.names(gbm_model$bestTune),]
+
+```
+
+
+
+#### Using the model on validation data and getting model metrics
+We fit the model on the validation data and obtain confusion matrix related metrics
+
+```{r}
+
+#get predicted class on the validation data
+predictions_on_validation_data=predict(object=gbm_model,newdata=validation_data[,c(1:11)])
+
+#get predicted probabilities on the validation data
+predictions_on_validation_data_probabilities=predict(object=gbm_model,newdata=validation_data[,c(1:11)],type="prob")
+
+#getting the confusion matrix
+confusionMatrix(predictions_on_validation_data,validation_data$Loan_Status)
+
+#get the AUC for the validation data
+
+#note that the reference class is "NO". So, if predicted probability is < 0.5, it will be classified as No. Otherwise, it will be classified as Yes
+
+#calculating ROC
+gbm_roc=roc(ifelse(validation_data$Loan_Status=="N",1,0),predictions_on_validation_data_probabilities[[1]])
+
+print("AUC on validation data")
+print(gbm_roc)
+
+#plotting the ROC curve for the validation dataset
+
+```
+
+
+#### GBM model explainer - using plots to interpret the model results
+Variable Importance, Partial dependence plots can be used for plotting the relationship between the outcome variable and the predictor variables
+
+```{r}
+
+#variable importance  - obtain the results of variables used in the model
+varImp(gbm_model)
+
+#plot variable importance
+plot(varImp(gbm_model))
+
+#looking at partial dependency plots to intepret the relationship between the predictor variables and the outcome variable
+plot(gbm_model,i="Gender")
+
+
+```
+
+#### Predictions on the test set
+Generating predictions on the test set
+
+```{r}
+test_data_predictions=predict(object=gbm_model,newdata=test_data[,c(2:12)])
+
+sample_data=data.frame(Loan_ID=test_data$Loan_ID,Loan_Status=test_data_predictions)
+
+#write result to file
+write.csv(sample_data,"sample.csv",row.names=FALSE)
+
+```
+
