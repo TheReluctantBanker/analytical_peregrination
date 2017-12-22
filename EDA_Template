@@ -1,0 +1,111 @@
+---
+title: "EDA"
+author: "Sudha"
+date: "December 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Set of generic codes that can be run to undertake exploratory data analysis
+
+#### Load required packages
+
+```{r}
+
+library(MASS) # to use the Cars93 dataset
+library(dplyr) # for simple data manipulation, summarization
+library(Hmisc) #for summary statistics
+library(e1071) # for skewness, kurtosis statistics
+library(pastecs) #for stat.desc function which provides more descriptive statistics
+library(psych) # for describe function which provides summary statistics
+
+```
+
+#### Load dataset for exploring
+
+```{r}
+data(iris)
+data(cars)
+data(airquality)
+
+
+```
+#### Performing initial quick checks on the dataset
+Get the dimensions, column names, broad structure of dataset, summary, peek at first few rows
+```{r}
+
+dim(iris)
+names(iris)
+str(iris)
+summary(iris)
+head(iris)
+
+#use functions from other packages
+describe(iris) # function from the psych package
+
+```
+
+
+#### Univariate analysis of numeric data
+Recipes for performing univariate analysis of the columns
+
+```{r}
+
+#get summary statistics for a numeric variable 
+summary(iris$Sepal.Length)
+
+#get the five number summary using the fivenum function
+#the results are minimum, 25% percentile, median, 75% percentile, maximum
+fivenum(iris$Sepal.Length)
+
+#using the stat.desc() function from the pastecs package to provide more descriptive statistics
+#number of values, nulls, missing values, min, max, range, summary statistics and coefficient of variation are available
+descriptive_stats=stat.desc(iris$Sepal.Length) #this is a named numeric vector
+#can extract specific component using the component name
+descriptive_stats["coef.var"]
+
+#another alternative  -use the describe() function from the psych package 
+describe(iris$Sepal.Length)
+
+
+#get other statistics - using built in functions
+range(iris$Sepal.Length)
+sd(iris$Sepal.Length)
+var(iris$Sepal.Length)
+skewness(iris$Sepal.Length)
+kurtosis(iris$Sepal.Length)
+IQR(iris$Sepal.Length)
+mode(iris$Sepal.Length)
+
+
+#to calculate the mode, here is a custom function 
+Mode <- function(x, na.rm = FALSE) {
+  if(na.rm){
+    x = x[!is.na(x)]
+  }
+
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+
+#using the function by calling it
+Mode(iris$Sepal.Length)
+
+```
+
+#### Testing normality of variable 
+Shapiro wilks test of normality can be used to test for normality of a variable 
+
+```{r}
+#use shapiro.test for testing the normality of a variable
+
+#null hypothesis - variable follows a normal distribution. If we are not able to reject null hypothesis, then the normality assumption is likely valid
+shapiro.test(iris$Sepal.Length)
+
+```
+
+#### Bivariate analysis - Obtain descriptive statistics of one numeric  variable grouped by another categorical variable 
+This can be done using the aggregate function
