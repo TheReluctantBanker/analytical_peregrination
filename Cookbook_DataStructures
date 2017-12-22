@@ -1,0 +1,726 @@
+---
+title: "CookBook_DataStructures"
+author: "Sudha"
+date: "December 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## R Markdown
+
+#### R Cookbook recipes for the chapter relating to data structures
+
+#### Import required libraries & required datasets
+
+```{r}
+
+library(MASS)
+
+
+data(Cars93)
+data(iris)
+
+```
+
+
+#### concept of mode - how different data structures are stored in memory
+
+```{r}
+
+#how is a numeric variable stored
+example_number=pi
+mode(example_number)
+
+#how is a numeric vector stored
+vector_example =c(1,2,3,4)
+mode(vector_example)
+
+#how is a logical vector stored
+example_logical_vector=TRUE
+mode(example_logical_vector)
+
+#how is a factor stored
+example_factor=as.factor(c("blue","green","red"))
+example_factor
+mode(example_factor)
+
+#how is a list stored
+example_list=list("a",1,TRUE)
+example_list
+mode(example_list)
+
+#how is a dataframe stored
+
+mode(iris) #a dataframe is stored as a list
+
+#how is a function stored
+mode(print)
+
+#how is date stored
+today_date=Sys.Date()
+today_date
+mode(today_date)
+
+
+```
+
+#### concept of class -the abstraction of the data type
+
+```{r}
+
+#class of a vector  depends upon the type of data that the vector contains
+vector_example
+class(vector_example)
+
+#class of a number
+example_number
+class(example_number)
+
+#class of a date variable 
+today_date
+class(today_date)
+
+#class of a list 
+example_list
+class(example_list)
+
+#class of a factor variable
+example_factor
+class(example_factor)
+
+#class of a complex number
+example_complex_number =2+3i
+example_complex_number
+class(example_complex_number)
+
+```
+
+#### Scalars in R - are just a special case of vectors! Scalar is a vector of length 1
+
+```{r}
+
+example_scalar=50
+example_scalar
+
+example_scalar[1] #this is same as example_scalar
+example_scalar[2] # this will return NA
+
+#there is a built in scalar called pi =3.14
+pi
+pi[1] # same as pi
+pi[3] #this will return NA
+
+
+```
+
+#### Recipes with respect to vectors
+
+vectors can have a name property
+```{r}
+
+vector_example =c('sudha','sujay','bhuvana','sai')
+names(vector_example) =c("self","friend","mother","brother")
+
+#look at the vector that got created
+vector_example
+
+#refer to a vector element using the name
+vector_example["self"]
+vector_example["mother"]
+
+```
+
+Length of vector
+```{r}
+
+#what is the length of the vector
+length(vector_example)
+
+```
+
+Appending new elements to a vector 
+
+```{r}
+#how to append new elements to a vector
+vector_example=c(vector_example,"Raji")
+#vector_example has got updated
+vector_example
+
+#here is an example for how one vector can be appended to another vector
+vector_example2=c("a","b","c")
+vector_example =c(vector_example,vector_example2)
+#see the contents of vector_example
+vector_example
+
+```
+
+
+
+Extending a vector by adding new elements
+```{r}
+#when you extend a vector -well beyond its expected length, R will fill in the missing subscripts with NA values
+# R does not complain about out of bounds subscript.
+numeric_vector=1:10
+# R does not complain about out of bounds subscript.
+numeric_vector[20] =pi
+#now have a look at the numeric_vector again - it will have missing values from subscripts 11 to 19
+numeric_vector
+
+```
+
+
+Inserting elements into a vector
+```{r}
+#inserting data into an existing vector -insert one or more items into a vector
+#use the append function 
+append(x=numeric_vector,values=c(pi,pi,pi),after=15)
+
+#another on the fly example for append
+append(x=1:10,values=99:105,after=10)
+
+#when you put after=0, it is a special form of append -which means, put the new items at the start of the vector
+append(x=100:110,values=1:10,after=0)
+
+
+```
+
+
+Understanding the recycling rule in vectors
+
+This is the explanation from the R Cookbook
+It processes the vector element in pairs,starting at the first elements of both vectors. 
+At a certain point, the shorter vector is exhausted while the longer vector still has unprocessed elements. R returns to the beginning of the shorter vector, "recycling" its elements
+
+```{r}
+
+#R uses the recyling rule to handle vectors of unequal length
+#Example 1  - adding two vectors of unequal length 
+
+vectora=1:10
+vectorb=c(2,4,6,8,10)
+
+vectora+vectorb # vector b will be recycled
+
+#column binding of two vectors of unequal length will also invoke the recycling rule
+cbind(1:6,1:3)
+
+```
+
+
+#### Basics of matrices as data structures
+A matrix can be created from a vector by giving it dimensions!
+```{r}
+
+
+example_for_vector =c(2,2,3,3,4,4,5,5,6,6)
+example_for_vector
+
+#lets give dimensions for this vector and it gets transformed to a matrix once dimensions are assigned to it
+#giving dimensions of 5 rows and 2 colums
+dim(example_for_vector) =c(5,2)
+#now look at the result
+example_for_vector #its become a matrix with 5 rows, 2 columns
+
+```
+
+Another way to create a matrix is to use the matrix function
+Specify the contents, dimensions, names and dimension names
+
+```{r}
+matrix_example=matrix(data=c(1:10),nrow=5,ncol=2,byrow=TRUE,
+                      dimnames=list(c("r1",'r2','r3','r4','r5'),c('c1','c2')))
+#look at the contents of matrix_example
+matrix_example
+
+```
+
+Alternatively, after creating a matrix, we can use the rownames() and colnames() to give the names
+
+```{r}
+matrix_example2=matrix(data=c(1:8),nrow=4,ncol=2)
+matrix_example2
+
+#now assigning row names and column names
+rownames(matrix_example2) =c("row1",'row2','row3','row4')
+colnames(matrix_example2)=c('col1','col2')
+
+#look at the contents of matrix again - names have been assigned to rows and columns
+matrix_example2
+
+```
+
+Selecting rows and columns or matrices
+
+```{r}
+#selecting one row at a time
+matrix_example2[2,] # select all elements from the second row, it is returned as a vector
+
+#selecting one column at a time
+matrix_example[,1] # select all elements from the first column, it is returned as a vector
+
+#to select one row at a time, but not return as vector - rather as a one row matrix
+matrix_example[2,,drop=FALSE] # returned as a one row matrix
+
+#to select one column at a time, but return it as a one column matrix
+matrix_example[,1,drop=FALSE] # returned as a one column matrix
+
+```
+
+Recipes for operations with matrices - matrix addition, subtraction, multiplication, transpose, inverse
+
+```{r}
+
+#use t() get the transpose of a matrix
+matrix_example3=matrix(data=c(10:24),nrow=5,ncol=3,byrow=TRUE) 
+matrix_example3 # a 5 by 3 matrix
+
+t(matrix_example3) # gets transposed to a 3 by 5 matrix 
+
+#perform addition of two matrices
+matrix_example4=matrix(data=c(0:14),nrow=5,ncol=3,byrow=TRUE)
+matrix_example4 # another 5 by 3 matrix 
+
+matrices_added = matrix_example3+matrix_example4
+matrices_added
+
+#difference of two matrices
+matrices_subtracted =matrix_example3-matrix_example4
+matrices_subtracted
+
+#product of two matrices using the %*% operator 
+matrix_example5=matrix(data=c(1:6),nrow=3,ncol=2,byrow=TRUE)
+matrix_example5
+
+matrices_multipled =matrix_example3 %*% matrix_example5
+matrices_multipled
+
+#get the inverse of matrix using solve() function
+matrix_square=matrix(data=c(1,2,-3,2,-1,2,3,2,4),nrow=3,ncol=3,byrow=TRUE)
+matrix_square
+solve(matrix_square)
+
+#get the determinant of a matrix using the det() function
+det(matrix_square)
+
+#get a n by n identify matrix
+diag(3) # to get a 3 by 3 diagonal matrix
+diag(5) # to get a 5 by 5 diagonal matrix
+
+
+```
+
+
+#### Basics of arrays as data structures
+
+Similar to matrices, we can create arrays by taking a vector and then giving dimensions to it.
+```{r}
+
+example_for_array=seq(1:24) # initialize a numeric vector
+#now giving dimensions to the array
+dim(example_for_array) =c(2,2,6)  
+#Lets look at the contents of the array created now
+example_for_array
+class(example_for_array)# it is an array
+
+
+#another example
+D=1:12
+#look at D -it is a numeric vector
+dim(D) =c(2,3,2)
+#now look at D
+D
+
+```
+
+#### Working with factor variables
+
+Creating a factor variable
+
+```{r}
+#use the factor function to create a factor variable -in this example, the input vector is exhaustive and has all the required levels in it
+
+#note for both the examples below that when we don't specify the levels argument, the factors get ordered in alphabetical order
+
+example_factor =factor(x=c("male","female","other"))
+#look at the result
+example_factor
+
+example_factor2=factor(x=c("Heads","Tails","Heads","Heads","Heads","Tails"))
+example_factor2
+
+#when the input vector does not have the complete list of levels, they  need to be specified separately
+
+#ordered =TRUE can be specified to enforce the order
+days_of_week=factor(x=c('sunday','monday','tuesday','wednesday','thursday'),levels=c('monday','tuesday','wednesday','thursday','friday','saturday','sunday'),ordered=TRUE)
+
+#another example 
+risk_levels=factor(x=c("low","medium","high"),levels=c("low","medium","high"),ordered=TRUE)
+risk_levels
+
+```
+
+Use of stack function to create converted a grouped vector into a dataframe with two columns-one column being the vector and other column being the grouping factor
+
+```{r}
+#the stack function needs a list. we use a named list to convert to the required dataframe
+
+#the different vectors are here
+freshman_scores=c(12,12,12,45,67)
+sophomore_scores=c(56,90,23,45,67)
+juniors_score=c(12,45,67,34,34)
+
+#creating a named list
+list_data=list(freshman=freshman_scores,sophomore=sophomore_scores,juniors=juniors_score)
+list_data
+
+#using stack function to convert this named list into dataframe
+college_data=stack(list_data)
+college_data
+
+```
+
+#### Working with lists 
+Recipes for different types of tasks done with lists 
+
+Creating a list using the "list" function
+
+```{r}
+#use the list function to create a list -note that this list has names for its elements
+example_list=list(a=c(1:10),b="foo",c=c(TRUE,TRUE,FALSE,FALSE),d=rnorm(10)) # see the list is a hodge podge of items 
+#look at the contents of example_list created
+example_list
+
+
+```
+
+Another way to create a list is to create an empty list and then populate it with elements
+
+```{r}
+
+example_list2=list()
+
+#start putting in elements into the list
+example_list2[[1]] =c(1,2,3,4)
+example_list2[[2]] =pi
+example_list2[[3]] =c("abc","def","lmm")
+
+#now look at the list contents
+example_list2
+
+```
+
+Recipes for selecting elements of list
+There are different ways for referencing the elements of a list and then returning it.
+
+```{r}
+
+#to select the nth element of a list -use [[]] - the data structure returned will be that of the structure within the list
+example_list[[1]] # select 1st element - a numeric vector
+example_list[[3]] # select the 3rd element - a logical vector
+
+#to select multiple elements from a list  -it will return a list
+example_list[c(1,2)] # the first and second elements are returned
+
+#to select elements of a list by  name
+example_list[["d"]] # returns a numeric vector
+
+example_list["d"] # this returns a list 
+
+example_list[c("a","c")] #this returns a list 
+
+example_list$a # result is a numeric vector
+
+```
+
+To remove elements from a list, simply assign NULL to that element. 
+
+```{r}
+#lets remove the "d" element from the example_list
+
+#before removing
+example_list
+
+#after removing
+example_list["d"] =NULL
+example_list # only elements a, b and c are left
+
+```
+
+
+It is possible to create a list with NULL elements in it. to remove such elements use below recipe
+```{r}
+list_with_nulls=list(a=c(1:3),b="aah",c=NULL,d=NULL,e=runif(5))
+list_with_nulls
+
+#to remove NULLs, use lapply -NULL entries will get removed
+list_with_nulls[sapply(list_with_nulls,is.null)] =NULL
+#look at the list again - NULLs have got removed
+list_with_nulls
+
+```
+
+Recipe for flattening the elements of a list into a vector. Using the unlist function
+When a list has elements all of same data type, we can use the unlist function to flatten it to a vector
+```{r}
+
+#suppose a list of test scores were stored in a list 
+iq_scores=list(34,67,89,12,34)
+
+mean(iq_scores) #this will give a error
+#now use the unlist function to enable us to obtain mean
+mean(unlist(iq_scores)) # will provide a result since unlist converts the list to vector
+
+```
+
+#### Wprking with dataframes as data structures
+
+Initializing a dataframe using vectors -assembling columns together into a dataframe
+
+```{r}
+student_names=c('a','b','c','d','e')
+student_age=c(12,13,12,12,11)
+student_scores=c(45,78,90,45,67)
+student_gender=c('male','female','male','male','female')
+
+#now creating a dataframe using the vectors created above
+student_dataframe=data.frame(student_names,student_age,student_gender,student_scores)
+#view the contents of the data frame
+student_dataframe
+str(student_dataframe) #by default, R has made the character vectors of factor type in the dataframe
+
+```
+
+Initializing a dataframe using observations in rows - using rbind and do.call
+
+```{r}
+#suppose we have observations which are a collection of the one row dataframes
+observation1=data.frame(name='a',age=12,gender='female',marks=45)
+observation2=data.frame(name='b',age=15,gender='female',marks=67)
+observation3=data.frame(name='c',age=12,gender='male',marks=78)
+
+#now these observations are brought into a consolidated data frame
+#do.call constructs and executes a function call from a name or a function and a list of arguments passed to it.
+#rbind is the function and list of the dataframes is the arguemnt 
+combined_dataframe=do.call(rbind,list(observation1,observation2,observation3))
+#look at the contents of the result dataframe
+combined_dataframe
+
+
+```
+Recipe for appending news rows to an existing dataframe
+
+```{r}
+#solution is to have the new rows stored in a temporary dataframe and then use rbind to combine this with the existing dataframe
+
+temp_dataframe=data.frame(student_names ='e',student_age=12,student_gender='male',student_scores=90)
+#now this temp dataframe is rbound to existing dataframe
+student_dataframe=rbind(student_dataframe,temp_dataframe)
+#see final result
+student_dataframe
+
+```
+
+Recipe for pre-allocating a dataframe, which is nothing but creating an empty dataframe but with specifying the columns and data types
+
+```{r}
+number_countries=190
+
+#the command below will initialize an empty dataframe
+country_dataframe=data.frame(
+  continent=factor(number_countries,levels=c('asia','africa','north america','south    america','europe','artic','antartic')),
+  population=numeric(number_countries),
+  economy_type=factor(number_countries,levels=c('emerging','developing','developed'))
+    )
+
+```
+
+Recipes for accessing differnt rows, columns, items from a dataframe
+
+```{r}
+#we will use the iris data for these examples
+
+#access particular column and return result as a numeric vector
+#add the head option to just restrict the output
+head(iris[[2]]) #the result is a numeric vector
+
+
+#access particular column - return as a data frame
+head(iris[2]) # result is a one column data frame 
+
+
+
+#access multiple columns - this will get returned as a data frame
+head(iris[c(2,3)]) #returns the 2nd column, 3rd column 
+
+#return all rows of the the nth column - and return result as vector
+head(iris[,2])
+
+#if you add the option drop=FALSE, the result will be a dataframe
+head(iris[,2,drop=FALSE])
+
+#return all rows of multiple columns - return the result as a dataframe
+head(iris[,c(1,4)]) #return is a dataframe
+
+#selecting dataframe column using column name - one column at a time
+head(iris$Species) # result is a vector
+head(iris$Sepal.Length) # result is a numeric vector
+
+#aliter for selecting column using column name 
+head(iris[,"Sepal.Length"]) #result is a numeric vector
+
+#select multiple columns using column name
+head(iris[c("Sepal.Length","Species")]) # result is a dataframe 
+
+#aliter for selecting multiple columns using column name
+head(iris[,c("Sepal.Length","Species")]) #result is a dataframe
+
+
+```
+
+#### Demonstrating subset function to select rows and columns from a dataframe selectively
+Recipe for how to use the subset and select option for selecting rows and columns from dataframe meeting specific conditions
+
+```{r}
+
+#subsetting - but no conditions, selecting specific columns
+iris_subset1=subset(iris,select="Sepal.Length")
+head(iris_subset1)
+
+#subsetting - no conditions, exclude specific columns
+iris_subset11=subset(iris,select=-c(Sepal.Length,Species))
+head(iris_subset11)
+
+iris_subset2=subset(iris,select=c("Sepal.Length","Petal.Width","Species"))
+head(iris_subset2)
+
+#subsetting - with conditions, selecting all columns
+iris_subset3=subset(iris,subset=(Species=="setosa"))
+head(iris_subset3)
+
+#subsetting -with conditions, selecting specific columns
+iris_subset4=subset(iris,select=c("Sepal.Length","Petal.Width"),subset=(Species=="setosa"))
+head(iris_subset4)
+
+#multiple conditions can be used using logical operators
+iris_subset5=subset(iris,select=(c("Sepal.Length","Species")),subset=(Sepal.Length>5.0 | Petal.Width<0.5))
+head(iris_subset5)
+
+iris_subset6=subset(iris,select=c("Sepal.Length",'Petal.Width','Species'),subset=Sepal.Length>=3.5 & Species=="setosa" | Species=="virginica")
+
+head(iris_subset6)
+
+
+```
+
+Recipe for use of subset and select function -some more functions using the Cars93 dataset
+
+```{r}
+#Select the model name for cars that can exceed 30 miles per gallon (MPG) in the city
+subset(Cars93,select=Model,subset=(MPG.city>30))
+
+#Select the model name and price range for four-cylinder cars made in the United States
+subset(Cars93,select=c("Model","Min.Price","Max.Price"),subset=(Origin=="USA" & Cylinders==4))
+
+
+#Select the manufacturer's name and the model name for all cars whose highway MPG
+#value is above the median
+subset(Cars93,select=c("Manufacturer","Model"),subset=MPG.city >median(MPG.city))
+
+```
+
+#### Changing or updating the column names of a dataframe 
+Recipe for when you want to update or modify the name of columns of the dataframe using the names property
+
+```{r}
+#here, will show as an example, how the column names of iris dataset can be changed
+#look at current column names
+names(iris) # can also use colnames(iris)
+
+#now assigning new column names - can use either names() or colnames()
+names(iris) =c("Sepal_Length","Sepal_Width","Petal_Length","Petal_Width","Species_Category")
+head(iris) # column names got updated
+ 
+
+```
+
+
+#### Viewing, editing data frames quickly (recommended to use sparingly)
+When you want to view the contents of a dataframe in an editor like interface, or when you want to make some quick, dirty, small changes to the dataframe
+
+Recommended approach is to assign the dataframe to a temporary dataframe and make changes in that temporary dataframe. Then assign the temp dataframe to the original dataframe, if we really want to go ahead with the changes.
+
+```{r}
+
+#use the View function to view dataframe - new window will open 
+View(iris)
+
+#use the fix function to quickly edit the contents of dataframe. there is no undo option
+#whatever changes you make, get captured. there is no explicit save option, no undo option
+fix(iris)
+
+```
+
+#### Dealing with missing values in dataframe
+Recipes for checking for missing values, dealing with missing values
+
+```{r}
+#to get quick summary of columns for details of missing values, the summary() function provides the details of missing values
+summary(Cars93) # some columns having missing values -for example, luggage.room
+
+#if you want to simply get rid of rows that contain some missing values - using na.omit function
+dim(Cars93) # total of 93 rows
+Cars93_non_missing =  na.omit(Cars93)
+dim(Cars93_non_missing) # total of 82 rows
+
+```
+
+#### Combining different dataframes
+rbind and cbind can be used to bring together different data frames
+```{r}
+
+#example for using rbind for stacking one dataframe on top of another  
+stooges=data.frame(name=c("Loe","Moe","Larry"),n.marry=c(1,1,4),n.child=c(1,1,2))
+stooges
+guys =data.frame(name=c("Tom","Harry","John"),n.marry=c(1,2,2),n.child=c(2,2,1))
+guys
+
+#rbind needs both dataframes to have same number of columns, same column names. column ordering can be different.
+combined_result_rbind=rbind(stooges,guys)
+combined_result_rbind
+
+#example for using cbind for sticking together two dataframes side by side. 
+#dataframes ideally need to have same number of rows, as otherwise, R will invoke the recycling rule
+birth=data.frame(year=c(1980,1988,1981),birth.place=c("brooklyn","philadelphia","new york"))
+
+combined_result_cbind=cbind(stooges,birth)
+combined_result_cbind
+
+```
+
+To merge two dataframes, we can use the merge function
+
+```{r}
+
+marriage_dates=data.frame(name=c("Loe","Moe"),year.married=c(2000,2010))
+
+#merge the stooges dataframe with marriage_dates using the name field
+#the default join attempted is inner join
+merge(stooges,marriage_dates,by="name")
+
+#other types of join
+books_data=data.frame(book_id=c(1,2,3,4,5),author=c('a','b','c','d','e'))
+ratings_data=data.frame(book_id=c(1,3,4),rating=c(4.5,5,3))
+
+#inner join 
+merge(books_data,ratings_data,by='book_id')
+
+#left join
+merge(books_data,ratings_data,by='book_id',all.x=TRUE)
+
+
+```
+
