@@ -1,0 +1,186 @@
+#Demonstration app for enabling user to input data via a google forms like form
+#then use that data for making new predictions
+#model used is analytics vidya loan dataset et -need a mix of numeric and categorical features
+
+#set the fields used for the data
+fieldsAll =c(
+  "Loan_ID",
+  "Gender",
+  "Married",
+  "Dependents",
+  "Education",
+  "Self_Employed",
+  "ApplicantIncome",
+  "CoapplicantIncome",
+  "LoanAmount",
+  "Loan_Amount_Term",
+  "Credit_History",
+  "Property_Area"
+  )
+
+# save the results to a file
+saveData <- function(data) {
+  
+  
+  if (file.exists("responses.csv"))
+  {
+    write.table(x=data,file="responses.csv",row.names=FALSE,col.names=FALSE,append=TRUE,sep=",")
+  }
+  else
+  {
+    write.table(x=data,file="responses.csv",row.names=FALSE,append=FALSE,sep=",") 
+    
+  }
+  
+  
+}
+
+
+
+
+#load required packages
+library(shiny)
+
+appCSS <-
+  ".shiny-input-container { margin-top: 25px; }
+#submit_msg { margin-left: 15px; }
+#error { color: red; }
+body { background: #fcfcfc; }
+#header { background: #fff; border-bottom: 1px solid #ddd; margin: -20px -15px 0; padding: 15px 15px 10px; }
+"
+
+# Define UI for application 
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("Loan data input"),
+   shinyjs::useShinyjs(),
+   shinyjs::inlineCSS(appCSS),
+   # Sidebar 
+   fluidRow(
+     column(6,
+           div(
+             id="form",
+           
+        
+        textInput("Loan_ID","Enter loan application ID number ","XXXX"),
+        
+        radioButtons("Gender", "select gender of applicant  ",
+                     choices = c("Male","Female")
+        ),
+        
+        radioButtons("Married", "Select the option for marital status  ",
+                     choices = c("No","Yes")
+        ),
+        
+        numericInput("Dependents", "Enter number of dependents",min = 0, max = NA, 
+                     step = NA,value =0),
+        
+        selectInput("Education", "Choose level of education",
+                    choices = c("Graduate",
+                                "Not Graduate"
+                                )
+        ) ,
+        
+        selectInput("Self_Employed", "Choose whether self employed or not ",
+                    choices = c("No",
+                                "Yes"
+                    )
+        ) ,
+        
+        numericInput("ApplicantIncome", "Enter applicant income",min = 0, max = NA, 
+                     step = NA,value =0),
+        
+        numericInput("CoapplicantIncome", "Enter co-applicant income",min = 0, max = NA, 
+                     step = NA,value =0),
+        
+        numericInput("LoanAmount", "Enter loan amount requested",min = 0, max = NA, 
+                     step = NA,value =0),
+        
+        
+        numericInput("Loan_Amount_Term", "Enter loan amount term",min = 0, max = NA, 
+                     step = NA,value =0),
+        
+        selectInput("Credit_History", "Choose option for existence of credit history ",
+                    choices = c(0,1)
+                    
+        ) ,
+        
+        selectInput("Property_Area", "Choose option property area ",
+                    choices = c("Rural","Semiurban","Urban")
+                    
+        ) ,
+        
+            actionButton("submit", "Submit", class = "btn-primary"),
+            
+            shinyjs::hidden(
+              span(id = "submit_msg", "Submitting..."),
+              div(id = "error",
+                  div(br(), tags$b("Error: "), span(id = "error_msg"))
+              )
+            )
+          ),
+      
+            shinyjs::hidden(
+              div(
+                id = "thankyou_msg",
+                h3("Thanks, your response was submitted successfully!"),
+                actionLink("submit_another", "Submit another response")
+              )
+            )
+       
+   )
+   )
+)
+              
+            
+    
+     
+
+# Define server logic 
+server = function(input, output, session) {
+  
+  # Gather all the form inputs (and add timestamp)
+  formData <- reactive({
+    data <- sapply(fieldsAll, function(x) input[[x]])
+    data <- t(data)
+    data
+  })    
+  
+  # When the Submit button is clicked, submit the response
+  observeEvent(input$submit, {
+    
+    # User-experience stuff
+    shinyjs::disable("submit")
+    shinyjs::show("submit_msg")
+    shinyjs::hide("error")
+    
+    # Save the data (show an error message in case of error)
+    tryCatch({
+      saveData(formData())
+      shinyjs::reset("form")
+      shinyjs::hide("form")
+      shinyjs::show("thankyou_msg")
+    },
+    error = function(err) {
+      shinyjs::html("error_msg", err$message)
+      shinyjs::show(id = "error", anim = TRUE, animType = "fade")
+    },
+    finally = {
+      shinyjs::enable("submit")
+      shinyjs::hide("submit_msg")
+    })
+  })
+  
+  # submit another response
+  observeEvent(input$submit_another, {
+    shinyjs::show("form")
+    shinyjs::hide("thankyou_msg")
+  })
+  
+  
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
