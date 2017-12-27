@@ -1,0 +1,84 @@
+Concepts relating to ensemble models 
+Bagging
+•	A simple ensembling technique
+•	In bagging we build many independent models and combine them using some model averaging techniques (for example, simple averaging, weighted average, majority vote)
+•	Typically, random sub-samples or bootstrapped samples of the training data are taken to build each model.
+•	The models will be a little different from each other
+•	Each observation in the training data has the same probability of appearing in all the models.
+•	Bagging techniques essentially works to reduce the variance, because it involves building models built separately, and hence uncorrelated with each other.
+
+Boosting
+•	Boosting is one of the most powerful ideas in machine learning to be introduced in the past 20 years
+•	It is also an ensemble technique which combines the outputs of many "weak" classifiers to produce a powerful "committee".
+•	A weak classifier (a decision tree) is typically one whose error rate is only slightly better than random guessing
+•	But the key difference from bagging is that not made independently, but sequentially.
+•	Subsequent models learn from the mistakes of the earlier models. 
+•	Therefore, observations in the training data have an unequal probability of appearing in the subsequent models and observations with highest error appear most.
+Comparison with Bagging
+•	Boosting methods play a key role in dealing with bias-variance trade-off.
+•	Unlike bagging methods, which focus on controlling/reducing variance, boosting methods focus on reducing both bias and variance 
+
+Gradient Boosting
+•	Gradient boosting is a machine learning technique for regression and classification problems
+•	Produces a prediction model in the form of an ensemble of weak prediction models, typically decision trees. 
+•	Models are built in an iterative stage wise fashion and generalized by allowing optimization of the loss function
+Abstracted version of how gradient boosting works 
+•	We first build simple models and analyze data for errors
+•	These errors signify data points that are difficult to fit by a simple model.
+•	Then for later models, we focus more on those hard to fit data to get them right
+•	In the end, we combine all models by giving some weights for each model.
+•	A technical summary 
+o	“The idea is to use the weak learning method several times to get a succession of hypotheses, each one refocused on the examples that the previous ones found difficult and misclassified.”
+
+Tuning parameters for gradient boosting
+
+n.trees
+•	Number of trees - that is the number of gradient boosting iteractions. 
+•	Increasing N reduces the error on the training set, but setting it too high might to over-fitting
+•	5000 trees might be large, 100 tree is a typical number
+
+
+interaction.depth
+•	Represents the maximum number of variable interactions
+•	1 implies an additive model, 2implies a model with up to 2-way interactions, etc
+•	That is, the number of splits to be performed on a tree.
+•	Number of nodes as  2 might generally be insufficient
+•	In additive model, interactions are not considered
+•	In general, more than 2 nodes are required to detect interactions.
+•	Default of 6 nodes appears to be a good option. Generally, values in the range of 4 to 8 can be tested
+•	Values above 10 will mostly not be required
+•	Unusual to have trees deeper than 10.
+•	More than 20 trees would make the model incredibly problem specific.
+
+Learning rate or Shrinkage 
+•	Shrinkage as such is a concept used commonly in penalized regression where it reduces regression coefficients to zero and thus reduces the impact of potentially unstable regression coefficients
+•	In the context of Gradient Boosting, shrinkage is used for reducing or shrinking the impact of each, additional fitted base learner. 
+•	Shrinkage reduces the size of each incremental iteration and thus penalizes the importance of each consecutive iteration. 
+•	Intuition behind shrinkage is that it is better to improve a model by taking many small steps than by taking fewer larger steps. If one of the boosting iterations turns out to be erroneous, its negative impact can be easily corrected in subsequent steps.
+•	Smaller values for shrinkage always typically result in better predictive models.
+•	High learning rates, of typically close to 1.0 might result in overfit models with poor performance. Low learning rates, typically smaller than 0.01 can significantly slow down the learning process
+•	A rule of thumb is that you can aim for 3000 to 10000 iterations with shrinkage rates between 0.01 and 0.001
+•	Typically, we first choose the shrinkage parameter and vary the number of iterations with respect to the chosen shrinkage parameter by using cross validation
+•	Another rule of thumb is that you can start with (1 / number of trees)
+
+n.minobsinnode 
+•	The minimum number of observations required in the tree's terminal node. 
+•	It can be set to 10 in general
+•	When working with smaller training data, it can be set lower to 5 or 3
+
+bag.fraction 
+•	This is the subsampling fraction to be used - the fraction of the training data observations randomly selected to build the next tree in the iteration. 
+•	Introduces randomness to the model fit and helps to provide generalization.
+•	when bag.fraction <1, running same model twice will result in similar but different fits.
+•	Default is 0.5, that is 50% of training data are used at each iteration.
+•	If training data is small, a larger fraction can be used
+
+train.fraction
+•	The first train.fraction *nrows(data) will be used to fit the model and the remainder will be used to compute the out of sample estimates of the loss function. 
+•	Default value is 1
+
+Stopping criteria
+•	Stopping criteria are used to avoid the chance of overfitting on the training data
+
+
+
