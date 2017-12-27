@@ -21,6 +21,8 @@ library(Hmisc) #for summary statistics
 library(e1071) # for skewness, kurtosis statistics
 library(pastecs) #for stat.desc function which provides more descriptive statistics
 library(psych) # for describe function which provides summary statistics
+library(sm) # for drawing super-imposed kernel density plots
+library(vioplot) # for drawing violin plots
 
 ```
 
@@ -30,6 +32,9 @@ library(psych) # for describe function which provides summary statistics
 data(iris)
 data(cars)
 data(airquality)
+data("faithful")
+data(mtcars)
+data("Cars93")
 
 
 ```
@@ -49,8 +54,8 @@ describe(iris) # function from the psych package
 ```
 
 
-#### Univariate analysis of numeric data
-Recipes for performing univariate analysis of the columns
+#### Univariate analysis of numeric data - Descriptive Statistics
+Recipes for performing univariate analysis of the columns in the form of various descriptive statistics
 
 ```{r}
 
@@ -96,6 +101,131 @@ Mode(iris$Sepal.Length)
 
 ```
 
+
+Recipe for obtaining a number of descriptive statistics in one shot for numeric variables 
+
+```{r}
+#use sapply function to achieve this. in this example, faithful data  -all the variables are numeric
+sapply(faithful,summary,na.rm=TRUE)
+sapply(faithful,mean,na.rm=TRUE) #get only the means
+
+```
+
+
+
+#### Univariate analysis of numeric data - Graphical analysis 
+Recipes for various types of plots that can be used for visualizing univariate data - that is visualize one column at a time 
+
+Recipes for histograms
+```{r}
+
+#make histograms of a numeric variable 
+hist(airquality$Temp,main ='Histogram',xlab="Temp")
+
+#historgram using ggplot 
+#note the options for the various frills, I() is used to supress unncessary output
+#alpha is for adding transparency 0 is fully transparent, 1 is opaque
+qplot(data=airquality,
+      x=Temp,
+      geom="histogram",
+      binwidth=5,
+      main='Histogram-Temperature',
+      xlab='Temperature',
+      ylab='Frequency',
+      fill=I("red"),
+      col=I("blue"),
+      xlim=range(airquality$Temp),
+      alpha=I(0.3))
+
+
+
+```
+
+Recipes for density plots 
+```{r}
+
+#you can  get density plot using the hist function by using freq=FALSE option
+hist(iris$Sepal.Length,freq=FALSE)
+
+#example for density plot
+plot(density(airquality$Temp),main='Density plot')
+
+#example to make a filled density plot
+density_plot =density(faithful$eruptions)
+plot(density_plot,main='Density Plot')
+polygon(density_plot,col='blue')
+```
+
+Recipes for dotplot 
+```{r}
+#make a dot plot for a numeric variable 
+dotchart(x=mtcars$mpg,labels=row.names(mtcars),main='dotplot example',xlab='mpg')
+
+```
+
+Recipe for boxplot
+
+```{r}
+
+#draw boxplot for a single numeric variable to get the details of its distribution
+boxplot(mtcars$mpg,main='Boxplot')
+
+#draw a notched boxplot
+boxplot(faithful$eruptions,notch=TRUE)
+
+```
+
+Recipe for violin plot - it combines the functionality of boxplot and kernel density plot
+
+```{r}
+#violin plot for mpg variable
+vioplot(mtcars$mpg)
+
+#violin plot for eruptions variable 
+vioplot(faithful$eruptions)
+
+```
+
+#### Converting a numeric variable to categorical by  binning it
+For the numeric variable, we need to specify the number of bins and the cut points for the frequency distribution. This recipe helps us to convert a numeric variable into a categorical variable by  binning it.
+
+```{r}
+#Example 1 - we will use the faithful dataset for obtaining frequency distribution of the eruptions variable
+
+#step 1 -get the range of the numeric variable of interest
+range_eruptions =range(faithful$eruptions)
+range_eruptions
+
+#step 2 - define the break points to be used by using the range created above
+#since the range is 1.6 and 5.1-  we will define the start point as 1.5 and end point as 5.5 and cut slice by 0.5
+breaks_eruptions = seq(from=range_eruptions[1],to=range_eruptions[2],by=0.5)
+breaks_eruptions
+
+#step 3 - use the cut function now - whereby the numeric vector gets binned 
+#the interval is closed on the left, open on the right
+faithful_cuts =cut(x=faithful$eruptions,breaks=breaks_eruptions,right=FALSE)
+
+#step 4 - final step - now use table function on the variable created above
+table(faithful_cuts)
+
+#step 5-visualize result -can visualize the distribution using a barplot
+barplot(table(faithful_cuts))
+
+#Example 2 - another example for frequency distribution using the Temperature variable from the airquality dataset
+range_temperature=range(airquality$Temp)
+range_temperature # range is from 56 to 97
+#defining cut points from 50 to 100 in steps of 5
+breaks_temperature=seq(from=50,to=100,by=5)
+breaks_temperature
+#cut the Temp variable
+temperature_cuts =cut(airquality$Temp,breaks=breaks_temperature,right=FALSE)
+#get the summary frequency distribution table 
+table(temperature_cuts)
+#can visualize the distribution using a barplot
+barplot(table(temperature_cuts))
+
+```
+
 #### Testing normality of variable 
 Shapiro wilks test of normality can be used to test for normality of a variable 
 
@@ -107,5 +237,220 @@ shapiro.test(iris$Sepal.Length)
 
 ```
 
-#### Bivariate analysis - Obtain descriptive statistics of one numeric  variable grouped by another categorical variable 
+#### Univariate analysis for categorical variable 
+
+```{r}
+#different techniques for summarizing and presenting categorical variables
+
+#use the table function to get count of the categories
+species_counts=table(iris$Species)
+species_counts
+
+#use the prop.table function to get the proportions of the categories 
+species_proportions=prop.table(species_counts)
+species_proportions
+
+#to check the levels of a factor variable
+levels(iris$Species) #by default, the levels are ordered in alphabetic order
+
+
+```
+
+#### Univariate analysis for categorical variable -Graphical
+
+```{r}
+#use barplot to show the counts of a categorical variable 
+barplot(species_counts)
+
+#use barplot to show the proportion of counts of categorical variable 
+barplot(species_proportions)
+
+#if in barplot you want the y axis labels to be horizontally placed
+par(las=2) # make label text perpendicular to axis
+par(mar=c(5,8,4,2)) # increase y-axis margin
+barplot(species_counts,horiz=TRUE)
+```
+
+
+
+#### Bivariate analysis  -comparing two numeric variables 
+
+Recipe when you want to compare the distribution of two numeric variables side by side
+```{r}
+#create overlapping histograms - when you want to compare one numeric variable's distribution versus the other 
+
+#Example - we plot and compare the distribution of Sepal.Length versus Sepal.Width
+# we are making use of the col argument with rgb(red, green, blue, alpha)
+#by making only one color 1 and rest 0, and also using alpha -we are able to control the 
+#coloring and transparency of the two histograms
+#Note that col=rbg(1,1,1,1) creates white, and rgb(0,0,0,1) creates black
+hist(iris$Sepal.Length,main ='Overlapping histograms',xlim=c(0,max(iris$Sepal.Length)),col=rgb(1,0,0,0.5),xlab='values')
+hist(iris$Sepal.Width,add=TRUE,col=rgb(0,0,1,0.5))
+box() # to enclose the graph within a box
+
+
+```
+
+
+#### Bivariate analysis - Numeric  variable versus categorical variable 
 This can be done using the aggregate function
+
+```{r}
+
+#you can obtain summaries of one numeric variable versus another categorical variable 
+
+#example 1 - get the average mpg by the level of cylinder
+aggregate(x=mtcars$mpg,by=list(mtcars$cyl),FUN=mean)
+
+#example 2-get the median MPG by grouping on the basis of both cyl and vs
+aggregate(x=mtcars$mpg,by=list(mtcars$cyl,mtcars$vs),FUN=median)
+
+
+```
+
+
+
+Recipe for obtaining a number of descriptive statistics in one shot for numeric variables in the dataset - grouped by categorical variable 
+
+```{r}
+#example 1 - obtain summary statistics for the iris dataset after grouping the observations based on the Species variable 
+describeBy(x=iris,group=iris$Species)
+
+#example 2-obtain summary statistics for MPG.highway after grouping the observations by Origin and Type from the Cars93 dataset
+describeBy(x=Cars93$MPG.city,group=list(Cars93$Origin,Cars93$Type))
+
+
+```
+
+
+
+Recipe for when you want to compare the distribution of one numeric variable with respect to another grouping variable 
+
+```{r}
+#example using mtcars dataset - we compare the distribution of the mpg variable with respect to cylinders as the grouping variable 
+
+#creating labels for the factors
+cylinder_labels=factor(mtcars$cyl,levels=c(4,6,8),labels=c("4-cylinder",'6-cylinder','8-cylinder'))
+
+#plot the densities and compare
+sm.density.compare(x=mtcars$mpg,group=cylinder_labels,xlab='mpg')
+#add the legend to identify each group 
+legend(x=25,y=0.16,legend=levels(cylinder_labels),fill=c('red','blue','green'))
+
+
+```
+
+Recipe for when you want to use dotchart to compare distribution of a numeric variable grouped by another categorical variable
+
+```{r}
+#example - we want to obtain a dotplot of the mpg variable from mtcars, grouped by the cylinder factor variable 
+
+# Dotplot: Grouped Sorted and Colored. Also sorted by mpg, group and color by cylinder. Some preprocessing and data prep tasks are required to accomplish this
+mpg_sorted=mtcars[order(mtcars$mpg),] # sort by mpg
+mtcars$cyl=as.factor(mtcars$cyl)
+
+mtcars$color[mtcars$cyl==4]='red'
+mtcars$color[mtcars$cyl==6]='green'
+mtcars$color[mtcars$cyl==8]='blue'
+
+dotchart(x=mpg_sorted$mpg,labels=row.names(mtcars),groups=mtcars$cyl,color=mtcars$color)
+
+
+```
+
+Recipe for using boxplot to visualize the distribution of a numeric variable grouped by categorical variable 
+
+```{r}
+#example  -compare the distribution of the mpg variable for the different levels of the cylinder variable 
+boxplot(mtcars$mpg~mtcars$cyl,main='Distribution of mpg by cylinder',xlab='Cylinder',ylab='mpg')
+
+
+```
+
+Recipe for notched boxplot -when the notches do not overlap, there is strong evidence that the medians differ
+
+```{r}
+boxplot(mtcars$mpg~mtcars$cyl,main='Distribution of mpg by cylinder',xlab='Cylinder',ylab='mpg',notch=TRUE,col=c('gold','green'))
+
+
+```
+
+#### Bivariate analysis - Analyzing one categorical variable versus another
+
+Recipe for obtaining a cross tabulation of one categorical variable versus another
+```{r}
+
+#make cross tabulation or contingency table of counts
+contigency_table_counts =table(Cars93$DriveTrain,Cars93$Origin)
+contigency_table_counts
+
+#make the cross tabulation and show proportions
+contingency_table_proportions=prop.table(contigency_table_counts)
+contingency_table_proportions
+
+
+```
+
+Recipe for chi-square test of independence of one categorical variable versus another
+Null hypothesis is that the two categorical variables are independen of each other
+Alternate hypothesis is that the two categorical variables are not independent of each other
+
+
+```{r}
+
+#Is the airbags variable independent of the origin variable in the Cars93 dataset
+chisq.test(x=Cars93$AirBags,y=Cars93$Origin) #result is that null hypothesis cannot be rejected. It means, the two variables are likely to be independent of each other. A mosaic plot will show that the proportions do not differ much
+mosaicplot(table(Cars93$AirBags,Cars93$Origin))
+
+#is drive train variable indepdent of the cylinders variable in the Cars93 dataset
+chisq.test(x=Cars93$DriveTrain,Cars93$Cylinders) # null hypothesis can bt rejected. It is likely that the two variables are related. See the corresponding mosaicplot
+mosaicplot(table(Cars93$DriveTrain,Cars93$Cylinders))
+
+```
+
+
+#### Bivariate analysis -analyzing one categorical variable versus another, graphical methods
+
+Recipe for a mosaic plot, which is a way to visualize cross tabulation 
+
+```{r}
+
+#use mosaic plot to visualize drive train versus origin distribution from the Cars93 data
+mosaicplot(contingency_table_proportions)
+
+#another example for mosaic plot - 
+mosaicplot(table(mtcars$cyl,mtcars$am),col=c("green",'red'))
+
+#use of a stacked plot for analyzing two categorical variables
+mtcars_vs_versus_gear=table(mtcars$gear,mtcars$vs)
+barplot(mtcars_vs_versus_gear,main ='vs versus gear',col=c('red','green','blue'),legend=row.names(mtcars_vs_versus_gear))
+
+#use of grouped plot for analyzing two categorical variables
+barplot(mtcars_vs_versus_gear,main ='vs versus gear',col=c('red','green','blue'),legend=row.names(mtcars_vs_versus_gear),beside=TRUE)
+
+
+
+
+```
+
+
+
+#### Multivariate analysis
+
+Recipe for multivariate notched boxplot 
+
+```{r}
+#let us compare the distributio of mpg versus the cylinder and am variable 
+#on x-axis, we have cyl=4,6,8+am=0 and then we have cyl =4,6,8 +am=1
+boxplot(mtcars$mpg~as.factor(mtcars$cyl)*as.factor(mtcars$am),notch=TRUE)
+
+```
+
+#### Exploring and analyzing missing data in the dataset
+Recipes for functions for checking the existence and extent of missing data in the dataset
+
+
+```{r}
+
+```
+
