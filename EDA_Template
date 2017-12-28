@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #### Load required packages
 
-```{r}
+```{r, message=FALSE}
 
 library(MASS) # to use the Cars93 dataset
 library(dplyr) # for simple data manipulation, summarization
@@ -23,6 +23,10 @@ library(pastecs) #for stat.desc function which provides more descriptive statist
 library(psych) # for describe function which provides summary statistics
 library(sm) # for drawing super-imposed kernel density plots
 library(vioplot) # for drawing violin plots
+library(car) # for enchanced scatter plots
+library(lattice) # for paired scatterplots conditioned on third factor variable
+library(gmodels) # for CrossTable() function
+library(outliers) # for chisq.out.test to test for outliers in the dataset
 
 ```
 
@@ -35,6 +39,7 @@ data(airquality)
 data("faithful")
 data(mtcars)
 data("Cars93")
+data(pressure) # for codes relating to outliers
 
 
 ```
@@ -98,6 +103,20 @@ Mode <- function(x, na.rm = FALSE) {
 
 #using the function by calling it
 Mode(iris$Sepal.Length)
+
+
+#Obtaining quick information on specific quantiles of a numeric variable 
+#use the quantile function and the associated probability to obtain different quantiles
+
+#Example 1 - getting some quantiles associated with numeric variable in iris dataset
+quantile(x=iris$Sepal.Length,probs=0.90) #getting the 90th percentile
+quantile(x=iris$Sepal.Length,probs=0.50) # getting the 50th percentile or the median
+
+#Example 2-when you want multiple quantiles, simply create a sequence
+quantile(x=mtcars$mpg,probs=seq(from=0.10,to=1.00,by=0.10)) # getting the deciles here
+
+#Example 3- getting the four quartiles
+quantile(x=Cars93$MPG.city,probs=c(0.25,0.50,0.75,1.00)) #get the 25%, 50%, 75% and 100% quartile
 
 ```
 
@@ -173,6 +192,12 @@ boxplot(mtcars$mpg,main='Boxplot')
 #draw a notched boxplot
 boxplot(faithful$eruptions,notch=TRUE)
 
+#in this boxplot you can see that the outliers ( data points beyond the 3rd quartile are marked)
+boxplot(Cars93$MPG.city)
+
+#but when outline =FALSE, then outliers will not be visualized. Distribution will only cover up to the 75% quartile
+boxplot(Cars93$MPG.city,outline=FALSE)
+
 ```
 
 Recipe for violin plot - it combines the functionality of boxplot and kernel density plot
@@ -237,7 +262,7 @@ shapiro.test(iris$Sepal.Length)
 
 ```
 
-#### Univariate analysis for categorical variable 
+#### Univariate analysis for categorical variable (Non graphical)
 
 ```{r}
 #different techniques for summarizing and presenting categorical variables
@@ -256,7 +281,7 @@ levels(iris$Species) #by default, the levels are ordered in alphabetic order
 
 ```
 
-#### Univariate analysis for categorical variable -Graphical
+#### Univariate analysis for categorical variable (Graphical Methods)
 
 ```{r}
 #use barplot to show the counts of a categorical variable 
@@ -273,7 +298,7 @@ barplot(species_counts,horiz=TRUE)
 
 
 
-#### Bivariate analysis  -comparing two numeric variables 
+#### Bivariate analysis  -Numeric variable versus another  numeric variable (non graphical analysis)
 
 Recipe when you want to compare the distribution of two numeric variables side by side
 ```{r}
@@ -290,9 +315,37 @@ box() # to enclose the graph within a box
 
 
 ```
+#### Bivariate analysis  -Numeric variable versus another  numeric variable (Graphical analysis)
+
+Recipe - Use scatter plots to visualize the possible relationship between two numeric variables
+
+```{r}
+
+#Example - simple scatter plot, visualize two numeric variables from the iris dataset
+plot(iris$Sepal.Length,iris$Sepal.Width,main ='Scatter Plot',pch=19)
+
+```
 
 
-#### Bivariate analysis - Numeric  variable versus categorical variable 
+Recipe When you want to overlay a linear regression line on the scatter plot you created
+```{r}
+
+#first the scatter plot should have been created 
+plot(mtcars$wt, mtcars$mpg, main="Scatterplot", 
+xlab="Car Weight ", ylab="Miles Per Gallon ", pch=19)
+
+#let us add a linear regression line over the previously created scatter plot
+abline(lm(mtcars$mpg~mtcars$wt), col="red") # regression line (y~x)
+
+#let us overlay a polynomial regression line over the previously created scatter plot
+lines(lowess(mtcars$wt,mtcars$mpg),col="blue")
+
+```
+
+
+
+#### Bivariate analysis - Numeric  variable versus categorical variable (non-graphical methods)
+
 This can be done using the aggregate function
 
 ```{r}
@@ -308,8 +361,6 @@ aggregate(x=mtcars$mpg,by=list(mtcars$cyl,mtcars$vs),FUN=median)
 
 ```
 
-
-
 Recipe for obtaining a number of descriptive statistics in one shot for numeric variables in the dataset - grouped by categorical variable 
 
 ```{r}
@@ -321,8 +372,6 @@ describeBy(x=Cars93$MPG.city,group=list(Cars93$Origin,Cars93$Type))
 
 
 ```
-
-
 
 Recipe for when you want to compare the distribution of one numeric variable with respect to another grouping variable 
 
@@ -340,6 +389,7 @@ legend(x=25,y=0.16,legend=levels(cylinder_labels),fill=c('red','blue','green'))
 
 ```
 
+#### Bivariate analysis - Numeric  variable versus categorical variable (graphical methods)
 Recipe for when you want to use dotchart to compare distribution of a numeric variable grouped by another categorical variable
 
 ```{r}
@@ -375,7 +425,7 @@ boxplot(mtcars$mpg~mtcars$cyl,main='Distribution of mpg by cylinder',xlab='Cylin
 
 ```
 
-#### Bivariate analysis - Analyzing one categorical variable versus another
+#### Bivariate analysis - Analyzing one categorical variable versus another (non-graphical methods)
 
 Recipe for obtaining a cross tabulation of one categorical variable versus another
 ```{r}
@@ -388,6 +438,12 @@ contigency_table_counts
 contingency_table_proportions=prop.table(contigency_table_counts)
 contingency_table_proportions
 
+#can make use of the CrossTable() function to obtain more informative cross tabulations
+#you can get the cross tabulation as well as results of chi square test
+CrossTable(as.factor(mtcars$cyl),as.factor(mtcars$am),chisq=TRUE)
+
+#another option for obtaining cross tabulation is xtabs 
+xtabs(~mtcars$cyl+mtcars$am)
 
 ```
 
@@ -409,7 +465,7 @@ mosaicplot(table(Cars93$DriveTrain,Cars93$Cylinders))
 ```
 
 
-#### Bivariate analysis -analyzing one categorical variable versus another, graphical methods
+#### Bivariate analysis -analyzing one categorical variable versus another(Graphical methods)
 
 Recipe for a mosaic plot, which is a way to visualize cross tabulation 
 
@@ -434,6 +490,43 @@ barplot(mtcars_vs_versus_gear,main ='vs versus gear',col=c('red','green','blue')
 ```
 
 
+#### Recipes for detecting and visualizing outliers - univariate and multivariate approaches
+
+A simple recipe for detecting outliers in a given numeric variable is to determine the inter-quartile range. Any observations outside of the bounds of the IQR are likely candidates for being outliers
+
+Another recipe is to plot boxplots and look for outliers
+Also, you can use some custom functions which look for outliers in the data and then report them.
+
+```{r}
+
+#get the IQR for pressure variable in the pressure dataset 
+IQR_pressure =quantile(pressure$pressure,probs=c(0.25,0.75))
+IQR_pressure
+#identify observations which lie outside of the IQR
+candidate_outlier_observations =subset(pressure,select=pressure,subset=pressure>IQR_pressure[2]| pressure <IQR_pressure[1])
+
+candidate_outlier_observations # there are 10 records out of 19 records - very small values and vergy large values for pressure
+
+#another simpler way to catch outliers is to draw a boxplot to look at the distribution of the variable 
+boxplot(pressure$pressure)
+
+#another way to visualize outliers is to draw boxplot of the numeric variable versus another categorical variable - this way, some categories where the numeric variable takes extreme values can get highlighted
+boxplot(Ozone~Month,data=airquality) # there are some months where outlier values are found
+
+#use the outlier function from the outlier package 
+outlier(pressure$pressure,opposite=TRUE) # having the largest difference from mean 
+outlier(pressure$pressure,opposite=FALSE) # having smallest difference from mean
+
+#if instead of the values, you would lke the positions - so that you can extract them later, use logical=FALSE
+outlier(pressure$pressure,logical=TRUE)
+
+#using the chisq.out.test from the outliers package for detecting outliers
+#this argument opposite is a bit confusion
+# if opposite =TRUE, if largest value has maximum difference from the mean, it gives smallest and vice versa)
+chisq.out.test(x=mtcars$wt,opposite=TRUE)  
+chisq.out.test(x=airquality$Temp,opposite=FALSE) 
+
+```
 
 #### Multivariate analysis
 
@@ -451,6 +544,43 @@ Recipes for functions for checking the existence and extent of missing data in t
 
 
 ```{r}
+
+```
+
+Recipe when you want to visualize the relationship between tow numeric variables, and add dimension of a third categorical variable
+```{r}
+#example - visualize weight versus mpg, based on the cylinder
+#we use the enchanced scatter plot functionality from the car package -legends are provided automatically.
+
+scatterplot(mpg~wt|cyl,data=mtcars,xlab='wt of car',ylab='mileage',smooth=FALSE)
+
+#another example using airquality data 
+#plot RPM versus fuel tank capacity and origin as the third dimension
+scatterplot(RPM~Fuel.tank.capacity|as.factor(Origin),data=Cars93,smooth=FALSE)
+
+```
+
+Recipe for scatteplot matrices  - to visualize a large number of numeric variables at a time
+
+```{r}
+#uses the pairs function to draw scatterplot matrices
+pairs(iris[,c(1:4)])
+
+#in pairs function, we can list the specific numeric variables that we want
+#use airquality data and obtain scatterplo for ozone, wind, temperature
+pairs(~Ozone+Wind+Temp,data=airquality)
+
+```
+
+Recipe for scatter plot matrices -to visualize a large number of numeric variables at a time and conditioned on a factor variable 
+
+```{r}
+
+#again using car package and the function called scatterplotMatrix
+scatterplotMatrix(~mpg+disp+drat+wt|cyl,data=mtcars, main='three cylinder options')
+
+#example 2 - plot the numeric variables in iris dataset conditioned on the species factor variable 
+scatterplotMatrix(~Sepal.Length+Petal.Length|Species,data=iris)
 
 ```
 
