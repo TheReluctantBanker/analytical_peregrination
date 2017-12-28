@@ -1,0 +1,526 @@
+---
+title: "Regression_RInAction"
+author: "Sudha"
+date: "June 1, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+#### Codes for practicing the chapter on Regression from the book R in Action
+
+
+```{r }
+#example 1 uses dataset called women - predicting weight using height
+data(women)
+head(women)
+
+#simple linear regression model
+women_model =lm(weight~height,data=women)
+
+#get the model results and all model related information using various functions
+summary(women_model)
+
+#to get various important components of the model - the following functions can be used
+
+#get the model coefficients
+women_model$coefficients
+
+#get the confidence intervals of the estimates
+confint(women_model)
+
+#get the predicted values
+fitted(women_model)
+
+#just plotting the fitted versus the actula values
+plot(fitted(women_model),women$weight)
+
+#to get the residuals of the model
+residuals(women_model)
+
+##generate an ANOVA table for the fitted model -also the F test results
+anova(women_model)
+
+#get the variance co-variance matrix for the model parameters
+vcov(women_model) # here the only two parameters are the height and the intercept
+
+#get the value of Akaike's Information Criterion for the model
+AIC(women_model)
+
+#generate the basic plot of regression models  - for regression diagnostics
+plot(women_model)
+#The plot of residals versus the fitted values - shows a curvilinear form - which implies a linear 
+#relationship is actually not the best form to  use as model
+
+```
+
+```{r}
+#fitting a polynomial regression model now - using a squared term for height
+women_model2=lm(weight~height+I(height^2),data=women)
+
+summary(women_model2)
+
+plot (women$height,women$weight, xlab="height",ylab="weight")
+lines(women$height,fitted(women_model2))
+
+#useful functions available from the car package for plotting bivariate relationships
+library(car)
+scatterplot(weight~height,data=women,smoother=loessLine, main="plot",xlab="height inches",ylab="weight in pounds")
+
+```
+
+```{r}
+#now example for multiple linear regression
+#using the state.x77 dataset - the data is in the form of a matrix, it has to be converted to a data frame
+
+#regression model to explore the relationship between the state's murder rate and the other variables
+#such as population, illiteracy rate, income, frost
+
+#converting the matrixt to a dataframe
+states=as.data.frame(state.x77[,c("Murder","Population","Illiteracy","Income","Frost")])
+
+dim(states)
+head(states)
+
+library(car)
+
+#get the correlation matrix as the first step
+cor(states)
+
+#using the scatterplot function in the car package to get scatter plots of all the variables
+scatterplotMatrix(states,main="Scatter plot",spread=TRUE,lty.smooth=2)
+
+#now fitting a mutiple linear regression model
+states.regression=lm(Murder~Population+Illiteracy+Income+Frost,data=states)
+
+states.regression
+summary(states.regression)
+
+
+```
+
+```{r}
+#multiple linear regression with interactions
+#we will use the mtcars dataset for this 
+
+data(mtcars)
+names(mtcars)
+head(mtcars)
+
+#lets build a regression model for mpg as a function of other variables - hp  and wt
+#but also having an interaction between hp and wt
+mtcars_model =lm(mpg~hp+wt+hp:wt,data=mtcars)
+
+summary(mtcars_model)
+
+#the statistical significance of the interaction term indicates that the relationship between 
+#mpt and hp depends upon the level of the wt
+
+
+#to visualize interactions - use the effect() function from the effects package
+library(effects)
+
+#we can plot the relationship between hp and mpt for different values of wt using a combination of  the
+#plot and effect function
+
+plot(effect("hp:wt", mtcars_model,
+list(wt=c(2.2,3.2,4.2))),
+multiline=TRUE)
+
+```
+
+####Focussing now on regression diagnostics
+####the plot function available in the base installation helps provide the basic regression diagnostics
+
+####plot 1 - residuals versus fitted. it should be a random pattern and not show any curvilinear or other forms - which might imply that the linear model fit is not the right model to apply
+####plot 2-is the normal Q-Q plot to check whether the normality assumption is met
+####plot 3-is the scale-location plot to check whether the constant variance assumption is met. the plot should show a random patter
+#### plot 4 - helps identify observations which could potentially have high leverage
+```{r}
+#lets get the regression diagnostic plots for the states related model 
+
+par(mfrow=c(2,2)) # helps to plot all the four plots side by side
+plot(states.regression)
+
+```
+
+####Using enhanced functions from the car package for helping with regression diagnostics
+```{r}
+#need the car package
+library(car)
+
+##qqPlot() plots the studentized residuals against t-quantiles with n-p-1 degrees of freedom.
+# n is the sample size and p is the number of parameters (including the intercept)
+
+par(mfrow=c(1,1))
+
+#when majority of the points fall within the confidence envelope, it implies that the normality
+#assumption has been met
+
+qqPlot(states.regression,labels=row.names(states),id.method="identify",simulate=TRUE, main ="QQPlot")
+
+#Nevada state is seen as an outlier
+names(states)
+#getting the statistics for the Nevada state
+states["Nevada",] # the actual murder rate is Nevada is 11.5%
+
+#getting the predicted value for Nevada
+residuals(states.regression)["Nevada"] # there is a positive residual - so the predicted value is 
+#much lesser than the actual value
+
+#getting the studentized residual value for Nevada
+rstudent(states.regression)["Nevada"]
+
+#function to test independence of errors, and by implication - the independence of the dependent 
+#variabe. Here we will a  function that implements the Durbin Watson test
+
+#if we are able to not reject the null hypothesis - then it means that the assumption regarding 
+#independence of errors is valid
+durbinWatsonTest(states.regression,simulate=FALSE) # to get the same result
+
+#to test the assumption of whether there is a linear relationship between each predictor variable and
+#the dependent variable - we can use the partial residual plots - also called component plus residual 
+#plots
+
+#implemented using the crPlots() function
+#if the plot shows any non-linear pattern - then it can indicate that the linear relationship is not 
+#the adequate form of the relationship
+
+crPlots(states.regression)
+
+
+#the ncvTest() function - another function for testing the assumption of constant variance
+
+#null hypothesis is that the variance is constant versus alternate hypothesis that the variance is
+#non-constant
+ncvTest(states.regression)
+#the p-value is not statistically significant - hence, the null hypothesis cannot be rejected
+#so this implies that the assumption of constant variance can be considered as valid
+
+#using spreadLevelPlot() to plot the absolute standardized residuals versus the fitted values
+#a line of best fit is also super imposed
+
+#you should expect to see a random pattern around the horizontal line. if you see a non-horizontal line
+#then it implies that the constant variance assumption is not met
+
+
+spreadLevelPlot(states.regression) # the suggested power transformation  is 1.2, which is almost close 
+# to 1, indicating that no transformation is really required
+
+```
+
+####Use of the gvlma() function for a global test of regression assumptions
+
+```{r}
+library(gvlma)
+
+gvlma(states.regression) # the results indicate that all assumptions are acceptable!
+
+```
+
+####Detecting multi-collinearity. Using the measure of variance inflation factors for detecting
+#### multi-collinearity
+
+####if the square root of the VIF for any of the predictors is > 2, it indicates a problem with
+#### multicollinearity
+
+```{r}
+#use the vif() function to determine the variance inflation factors
+library(car) # need the car package
+vif(states.regression)
+
+#checking if the square root of vif of any of the predictors is above 2
+sqrt(vif(states.regression)) >2  #results are false for all the predictors
+
+```
+
+
+####Next up, looking at unusual observations - outliers, high leverage observations and influential 
+####observations
+
+#### First, looking at outliers
+```{r}
+
+#generally - points that do now lie on the QQ plot are typically outliers
+#next, points with standardized residuals more than +/-2 are also candidate outliers
+
+#using the outlierTest function to detect outliers
+#identifies the observation having the largest studentized residual
+
+#the function tests the single largest positive /negative residual for statistical significance
+#if significant -it is reported, otherwise it means there are no outliers
+
+outlierTest(states.regression)
+```
+
+####Next-looking at high leverage points
+```{r}
+#identifying high leverage points using the hat statistic
+#this is a custom function for calculating the hat values and then plotting
+hat.plot=function(fit) {
+  
+  p=length(coefficients(fit))
+  n=length(fitted(fit))
+  plot(hatvalues(fit),main="hat plot")
+  abline(h=c(3,2)*p/n,col="red",lty=2)
+  identify(1:n,hatvalues(fit),names(hatvalues(fit)))
+     
+  
+}
+
+#now call and use the function
+hat.plot(states.regression)
+```
+
+####identifying influential observations
+```{r}
+
+#two methods for identifying influential observatios - cook's distance and added variable plots
+
+#creating a custom cook's D plot
+cook.cutoff=4/(nrow(states)-length(states.regression$coefficients-2))
+plot(states.regression,which=4,cook.levels=cook.cutoff)
+abline(h=cook.cutoff,lty=2,col="red") #states of Nevada, Alaska, Hawaii identified as influential observations
+
+
+#next - look at added variable plots : for one response variable and k predictor variables -  k added variable plots are created
+
+#need the function avPlots from the car package
+library(car)
+avPlots(states.regression,ask=FALSE,onepage=TRUE,id.method="identify")
+#the straight  line in the plot represents the actual regression coefficient for the predictor
+#you can deduce the impact the influential observations would have on the  line
+
+#combining the identification and analysis of outlier, leverage and influential observations in a
+#single plot - influence plot
+
+influencePlot(states.regression,id.method="identify",main="influence plot", sub="circle size is proportional to cook's distance")
+
+```
+
+####when linearity assumption is not met, then we can try transforming the predictor variable so that
+#### the relationship can becoming linear after transformation
+
+```{r}
+#use the powertransform function to achieve this - available from the library car
+
+summary(powerTransform(states$Murder)) # this is the box-cox transformation 
+
+#the suggested estimated power is 0.6055 - which means you can transform the murder variable by raising
+#it to power 0.6055 to meet the normality assumption. Hence, we could consider square root transformation
+
+#note that if you are not able to reject the hypothesis that lambda =1 - then it means that the 
+#transformation is really not needed
+
+#similar to  box-cox transformation which suggestes transformation for the response variable , the box-
+#tidwell function can be used to suggest transformations for the predictor variables which will help
+#restore the assumption of normality
+
+#also happens to be a function from the car package
+
+boxTidwell(Murder~Population+Illiteracy,data=states)
+
+#the transformations suggested are raising to power 0.87 for population and to power 1.35 for illiteracy
+#But you also need to see the p-value to decide whether the transformation is needed
+
+#if the p-value implies the MLE of lambda is not statistically significant, then the transformation is 
+#not required
+
+```
+
+
+####Next up, we look at the methods for choosing the  best regression model among the available 
+#### regression models
+
+```{r}
+#comparing two models when one model is a nested mode of the other model
+names(states)
+states.reg1=lm(Murder~Population+Illiteracy+Income+Frost,data=states)
+states.reg2=lm(Murder~Population+Illiteracy,data=states)
+
+#now states.reg2 is a subset of states.reg1
+
+#now comparing the two models using the anova function
+
+#the anova function tests whether the additional variables add to the predictive ability of the model
+anova(states.reg1,states.reg2)
+#here the result of the test is statistically non-significant
+#null hypothesis  -the additional variables do not add to predictive ability
+#alternative hypothesis - the additional variables add to predictive ability 
+
+#here, since the p-value indicates we cannot reject null hypothesis - we can conclude that the additional variables of income and frost are not statistically significant for the linear regression
+#model
+
+#comparing the AIC of the two models - lower the AIC, better the model
+AIC(states.reg1,states.reg2)
+
+```
+
+####variable selection methods-forward stepwise regression, backward stepwise regression and stepwise stepwise regression
+
+
+####first - backward stepwise regression
+
+```{r}
+
+#two possible functions can be used - stepAIC and step
+
+#first step is to specify the null model. next step is to specify the full model
+
+#null model
+null.model = lm(Murder~1,data=states)
+
+#full model
+full.model =lm(Murder~.,data=states)
+
+
+#will use the MASS package for stepAIC function
+library(MASS)
+#we will use the stepAIC function to perform the stepwise regression where model selection uses the AIC Criterion
+
+#first example-performing stepwise backward regression - using stepAIC function
+fit1=lm(Murder~Population+Illiteracy+Income+Frost,data=states)
+stepAIC(fit1,direction="backward")
+
+#another way of doing backward regression - using the step function
+step(full.model,data=states,direction="backward")
+
+```
+
+####Some words on how the above model results are to be interpreted. the full model has AIC of 97.75
+####At each step, a variable is removed and the model is run and the AIC is obtained.For example, the model where frost is removed gives AIC of 95.753. Next step the variable income is removed and we obtain the AIC of 95.759. Note her that the full model has AIC of 97.749
+
+####Next step, when we remove population  -we see the AIC increases to 102.111
+
+####In the case of the step function - we start first will the full model and then eliminate variables and check the AIC at each stage to choose the required model
+
+####looking now at forward stepwise regression
+
+#### Two methods - using stepAIC function, using the step function
+```{r}
+
+
+#here is an example for forward regression using the stepAIC function 
+stepAIC(null.model,scope=list(lower=null.model,upper=full.model),direction="forward")
+
+#another way of doing forward regressio -use the step function to perform forward stepwise regression
+forward.regression =step(null.model,scope=list(lower=null.model,upper=full.model),direction="forward")
+
+#inspect the results of the forward regression model
+forward.regression # the results can be inspected - the model with illiteracy and population is seen to the most suited model
+
+```
+####Now, if we want to undertake  stepwise stepwise regression -using the step function and the direction option to be used is both
+
+```{r}
+step(null.model,scope=list(upper=full.model),data=states,direction="both")
+
+```
+
+
+####looking now at best subsets regression - we will use the leaps package for this
+
+####performing an all subsets regression or the nbest subset regression
+####if we specify nbest2, then two best  1 predictor models are first provided, the two best 2 predictor models are provided, then two best 3 predictor models are provided and so on upto a model with all the predictors
+
+####Criteria that can be chosen - R-squared, Adjusted R-squared or Mallows CP statistic
+
+```{r}
+library(leaps)
+#example here is for getting all subsets regression for states, choosing  nbest =4
+nbest_4=regsubsets(Murder~.,data=states,nbest=4)
+
+#inspect the results
+summary(nbest_4)
+
+#plotting the results provides better option to understand the results
+plot(nbest_4,scale="adjr2")
+
+#interpreting the plot above - the model with the intercept, population, illiteracy is the one with highest adjusted r-squared
+
+#now plotting and using the cp statistic 
+library(car)
+subsets(nbest_4,statistic="cp",main="cp plot for models")
+abline(1,1,lty=2,col="red") # the model which lines along or near the line with slope of 1 and intercept of 1 is the best possible model.
+
+```
+
+
+####Next up the concept of variable importance - how do we determine which of the variables are key //most important for the explaining the response variable
+
+```{r}
+#first method is to obtain standardized coefficients for the regression model
+
+#use the scale function to scale all the variables.
+#the scale function converts the result to a matrix and hence it needs to be converted back to data frame
+zstates=as.data.frame(scale(states))
+
+#running the regression model with the scaled variables
+zstates.regression=lm(Murder~.,data=zstates)
+
+coefficients(zstates.regression)
+
+barplot(coefficients(zstates.regression)) # can visualize the standardized model coefficients
+
+```
+
+#### Getting the relative importance of variables - functions from the relaimpo package
+```{r}
+library(relaimpo)
+
+#to calculate the relative importance for each variable
+calc.relimp(states.regression,type=c("lmg","last","first","pratt"),rela=TRUE)
+
+#the relative importance figures obtained using the metric of "lmg" will all add up to 1
+calc.relimp(states.regression,type=c("lmg"),rela=TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
