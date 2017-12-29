@@ -1,0 +1,226 @@
+---
+date: "December 29, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Recipes for working with long data and wide data
+
+Reference :http://data.library.virginia.edu/a-tidyr-tutorial/
+
+## Load require packages
+
+```{r,message=FALSE}
+
+library(tidyr)
+library(reshape2)
+library(dplyr)
+
+```
+
+# First - understand the concept of key value pairs
+
+It is important to understand the concept of key value pairs in order to be able to appreciate the functions in the tidyr package 
+
+In this example, we first create some dummy data for three stocks X,Y,Z and use it to get the intuition behind the concepts of key value pair
+
+
+```{r}
+
+#data frame has columns datetime, X, Y Z (which contains the prices)
+set.seed(10)
+stock_data=data.frame(
+              price_date =as.Date('2017-01-01')+0:9,
+              X=rnorm(10,200,10),
+              Y=rnorm(10,200,10),
+              Z=rnorm(10,200,10)
+)
+
+#look at the data that has got created
+stock_data
+
+```
+
+When we look at the first row, we see date for the date 2017-01-01 and there are values for three stocks of X,Y and Z.
+200.1875 is the value associated with key X
+211.0178 is the value associated with key Y
+194.0369 is the value associated with key Z
+The three key values pairs are unique to the date "2017-01-01"
+
+Recipe Understand how to use gather function to transform wide data to long data 
+
+Let us now see how the gather function will be used for gathering these key value pairs to transform the data from wide data to long data. Applying the gather function to the data would mean we gather the X, Y, Z columns into two columns (one column is key, the other column is the associtaed value)
+
+## Converting data from wide form to long form
+
+
+#### Recipe for the gather function to convert data from wide form to long form 
+Applying the gather function to the data above would mean gathering the X, Y and Z columns into two columns of key-value pairs
+
+```{r}
+#look at the arguments passed to the gather function , and how we create the new dataframe 
+
+stock_data_gathered=gather(data=stock_data,key="stock_name",value="stock_price",c(X,Y,Z))
+#look at the result - notice how gather has retained the price_data column 
+stock_data_gathered
+
+#an aliter for the gather command - is when you want to gather all columns except some column - you can mention what you are excluding
+stock_data_gathered_aliter=gather(data=stock_data,key="stock_name",value="stock_price",-price_date)
+#look at the result 
+stock_data_gathered_aliter
+
+```
+
+#### Recipe for the melt function from reshape2 package (aliter for the gather function)
+The melt function from reshape package is equivalent to the gather function. Below is the same example of gathering the data done with the melt function 
+
+```{r}
+
+stock_data_melted=melt(data=stock_data,measure.vars = c("X","Y","Z"),variable.name = "stock_name",value.name="stock_price")
+
+#look at the result
+stock_data_melted
+
+```
+
+How did the data become tidy?
+Earlier, before gathering or melting the data - each row had observations for a given data for three different stocks. Hence, it was not following the principles for tidy data.
+
+After gathering/melting the data,
+(1)Each variable forms a column. The three variables are price_date, stock_name, stock_price.
+(2) Each row is now one observational unit (price on a given date for a given stock)
+(3) The data frame is composed of the above observational rows.
+
+
+## Converting data from long form to wide form 
+
+
+We create some dummy long data to use for example -a dummy of students 
+```{r}
+
+#creating some dummy data 
+
+subject=c(1,1,1,2,2,2,3,3,3,4,4,4)
+gender=c('M','M','M','F','F','F','M','M','M','M','M','M')
+condition=c('control','cond1','cond2','control','cond1','cond2','control','cond1','cond2','control','cond1','cond2')
+measurement=c(78,89,78,67,89,90,45,67,89,34,78,67)
+
+measurements_data =data.frame(subject,gender, condition,measurement)
+
+#look at the dummy data created 
+measurements_data
+```
+
+#### Recipe for the spread function
+The spread function does the reverse of the gather function. It converts long data into wide data
+Using the spread function to convet data from long form to wide form
+
+The arguments to spread():
+-data: Data object
+-key: Name of column containing the new column names
+-value: Name of column containing values
+
+```{r}
+
+#the gender column is taken care of by itself - we need to focus only on the columns which will make up the key and the value
+measurement_data_wide =spread(data=measurements_data,key=condition,value=measurement)
+
+
+```
+
+#### Recipe for the dcast function (aliter for the spread function)
+Using the dcast function from the reshape2 package to convert the measurements data from long form to wide form
+```{r}
+
+#to convert the data from long form to wide form
+#we want to retain the subject column and sex column as such 
+#condition should become key -the levels of condition will become the column headers
+#the measurements should get the values
+
+measurement_data_wide_aliter=dcast(data=measurements_data,subject+gender~condition,value.var="measurement")
+#look at the result
+measurement_data_wide_aliter
+
+
+```
+
+#### Recipe for using the separate function 
+Sometimes two variables are clumped together in one column. separate() allows us to separate them
+
+Creating an example data for this task
+
+```{r}
+
+set.seed(10)
+messy_data = data.frame(
+  id = 1:4,
+  trt = sample(rep(c('control', 'treatment'), each = 2)),
+  work.T1 = runif(4),
+  home.T1 = runif(4),
+  work.T2 = runif(4),
+  home.T2 = runif(4)
+)
+
+```
+
+Step 1 - convert this wide data to long data format 
+
+```{r}
+
+gathered_data =gather(data=messy_data,key="location_time",value="time",-id,-trt)
+
+```
+Step 2- we are interested in separating out the contents lying within the location_time variable 
+Use the separate() function to achieve this
+
+```{r}
+#the workings are more intuitive when we use the chaining operator
+separate_data =gathered_data %>%
+  separate(col=location_time,into=c("location","time"),sep="\\.")
+
+#look at the result
+separate_data
+
+```
+
+
+
+#### Recipe for using the unite function 
+Unite function lets you take separate columns and then combine them into one column
+
+Step 1 - create some dummy data to use for the unite function   
+
+```{r}
+
+set.seed(1)
+date <- as.Date('2016-01-01') + 0:14
+hour <- sample(1:24, 15)
+min <- sample(1:60, 15)
+second <- sample(1:60, 15)
+event <- sample(letters, 15)
+dummy_data_for_unite = data.frame(date, hour, min, second, event)
+
+#look at the data created
+dummy_data_for_unite
+
+```
+
+In the dummy data, we would like to unite the hour, min, second columns to one column, naming it "date_time"
+
+```{r}
+
+#using the unite() function 
+#using it in two steps, to make the result better looking
+dummy_data_united = dummy_data_for_unite %>%
+  unite(date1,date,hour,sep=' ') %>%
+  unite(date_time,date1,min,second,sep=":")
+  
+  
+#look at the result
+dummy_data_united
+
+```
+
