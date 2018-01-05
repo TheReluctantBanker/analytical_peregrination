@@ -1,0 +1,214 @@
+---
+title: "CaretPackage"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Compendium of important functions from caret package for machine learning
+
+Import required libraries
+
+```{r}
+
+library(caret)
+library(mlbench) # for using the boston housing dataset
+library(MASS) # to use the Cars93 dataset
+
+```
+
+Import example datasets for use
+
+```{r}
+
+data(iris)
+data("Boston")
+data("Cars93")
+
+```
+
+#### Visualize Features
+
+Recipe -Use featureplot function for visualizing features in the dataset when target variable is categorical
+
+```{r}
+
+#Example 1 -get scaterplot of the feature versus target variable 
+featurePlot(x=iris[,c(1:4)],y=iris$Species,plot="pairs",auto.key=list(columns=3))
+
+#Example 2 - get scatter plot of feature versus target variable with ellipsis
+featurePlot(x=iris[,c(1:4)],y=iris$Species,plot="ellipse",auto.key=list(columns=3))
+
+#Example 3-get density plots for each feature -for each level of the target variable 
+#Helps to compare the distribution of the feature by the level of the target variable
+featurePlot(
+            x=iris[,c(1:4)],
+            y=iris$Species,
+            plot="density",
+            scales=list(x=list(relation="free"),y=list(relation="free")),
+            pch="|",
+            adjust=1.5,
+            layout=c(4,1),
+            auto.key=list(columns=3)
+            )
+
+#Example 4 - use feature plot to get boxplot of the feature for each level of the target variable 
+featurePlot(
+            x=iris[,c(1:4)],
+            y=iris$Species,
+            plot="box",
+            scales=list(x=list(relation="free"),x=list(rot=90)),
+            layout=c(4,1),
+            auto.key=list(columns=2)
+            )
+
+
+
+```
+
+Recipe -Use featureplot function for visualizing features in the dataset when target variable is continous 
+
+```{r}
+
+#Example 1 - feature plot using boston housing dataset, provide a scatter plot 
+regression_variables=c("age","lstat","tax")
+target_variable="medv"
+
+featurePlot(x=Boston[,regression_variables],
+            y=Boston[,target_variable],
+            plot="scatter",
+            layout=c(3,1)
+            )
+
+#Example 2 -feature plot using boston housing dataset, add a smoothed line to the scatter plot
+featurePlot(x=Boston[,regression_variables],
+            y=Boston[,target_variable],
+            plot="scatter",
+            type=c("p","smooth"),
+            span=0.5,
+            layout=c(3,1)
+            )
+
+```
+
+#### Create Dummy variables for categorical features
+Recipe -Use the dummyVars functions to create dummy variables when you have categorical features
+
+```{r}
+#Example - using the Cars93 dataset , we create dummy variables for the categorical features
+#need to ignore the make variable from the cars dataset ( last variable in the dataframe)
+
+dummies_cars93=dummyVars(formula=MPG.city~.,data=Cars93[,c(1:26)])
+Cars93_with_dummyvars=predict(dummies_cars93,newdata=Cars93[,c(1:26)]) #result is a matrix
+#see a sample of the dummy variables created 
+Cars93_with_dummyvars[1:10,1:10]
+
+```
+
+#### Identifying features with near zero variance
+Recipe - Identify features with near zero variance so that they can be excluded from analysis 
+
+
+```{r}
+#Example  -checking the variables of iris dataset for near zero variance predictors
+nvz_iris=nearZeroVar(iris[,c(1:4)],saveMetrics = TRUE)
+#look at the results
+nvz_iris
+
+#Example 2- checking the variables of the Boston dataset for near zero variance predictors
+nvz_boston =nearZeroVar(Boston,saveMetrics = TRUE)
+nvz_boston
+
+
+
+```
+
+
+#### Identify correlated predictors
+Recipe -using the findcorrelation function to identify predictors which could be highly correlated with each other
+
+```{r}
+
+#Example 1 -use the iris datset to check for large correlations of the explanatory variables
+iris_correlations =cor(iris[,c(1:4)])
+iris_large_correlations=findCorrelation(iris_correlations,cutoff = 0.75)
+
+```
+
+#### Preprocess data such as centering, scaling, etc
+Recipe -use the preprocess function to pre-process the input data in a specific manner
+Different types of preprocessing possible are centering, scaling, range conversion, various types of transformation 
+
+
+```{r}
+
+#Example - for iris data, we get the explanatory variables and then preprocess them in different ways
+iris_training=iris[,c(1:4)] # only the explanatory variables are to be pre processed
+
+#preprocess by centering and scaling the variables (combination of centering+scaling = standardization)
+iris_preprocess1=preProcess(x=iris_training,method=c("center","scale"))
+iris_preprocess1_result=predict(iris_preprocess1,newdata=iris_training)
+#check results
+head(iris_preprocess1_result)
+summary(iris_preprocess1_result) # all predictors will have mean zero, sd=1
+
+#preprocess by range option :range scales the variables between 0 and 1
+iris_preprocess2=preProcess(x=iris_training,method="range")
+iris_preprocess2_result=predict(iris_preprocess2,newdata=iris_training)
+summary(iris_preprocess2_result)  # values are between 0 and 1
+
+#Do box cox transformation for the explanatory variables
+iris_boxcox=preProcess(x=iris_training,method="BoxCox")
+iris_boxcox # you can see the reuslts of the estimated lambdas
+#using the lambdas to do the transformation
+iris_boxcox_result=predict(iris_boxcox,newdata=iris_training)
+par(mfrow=c(2,1)) # show two plots for before and after
+plot(density(iris$Sepal.Length))
+plot(density(iris_boxcox_result$Sepal.Length))
+
+
+
+```
+
+#### Techniques for data partition
+Recipe - split the data into training data & test data. Create other types of data splits
+
+```{r}
+
+#Example for using create data partition to partition iris data into 80% training data and 20% test data
+#class proportions of the target variable are preserved by the create data partition function 
+
+iris_partition=createDataPartition(y=iris$Species,times=1,p=0.8,list=FALSE)
+iris_partition #is a matrix of length nrows*p
+#create training data using the indices above
+iris_training =iris[iris_partition,] # pick those indices found in iris_partition
+
+#create test data using the indices above  -by excluding the indices
+iris_testing =iris[-iris_partition,]
+
+dim(iris_training)
+dim(iris_testing)
+
+
+```
+
+Recipe - use createResample for creating boostrapped samples
+
+```{r}
+sample_data=c(1:10)
+
+#creating 5 bootstrapped samples using the above of size =10 each
+resampled_sample_data=createResample(y=sample_data,times=5,list=FALSE)
+
+```
+
+Receipe - use Createfolds for creating folds
+
+```{r}
+#example - create 3 folds using iris dataset
+iris_folds=createFolds(y=iris_training$Species,k=3,list=TRUE,returnTrain = TRUE)
+iris_folds #this is a list -each list element has the indices to be used
+
+```
+
