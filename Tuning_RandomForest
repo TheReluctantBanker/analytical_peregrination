@@ -1,0 +1,88 @@
+---
+title: "Tuning_RandomForest"
+author: "Sudha"
+date: "December 22, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#using the loans dataset
+```{r}
+library(randomForest)
+library(caret)
+
+```
+
+```{r}
+
+#### Import training data and test data
+
+```{r}
+
+input_data=read.csv(file="C://Users//sudha//Documents//R//datasets//Loan//training_data.csv",header=TRUE)
+
+test_data =read.csv(file="C://Users//sudha//Documents//R//datasets//Loan//test_data.csv",header=TRUE)
+
+#quick checks
+dim(input_data)
+dim(test_data)
+
+str(input_data)
+names(input_data)
+
+```
+
+
+#### Treatment of missing values
+There are some observations having missing values. For this example, we use na.roughfix to impute missing values
+```{r}
+
+input_data=na.roughfix(input_data)
+test_data=na.roughfix(test_data)
+
+```
+
+
+#### Data Partition of the input data into 80% training data and 10% validation dataset
+We use data partition from caret to split the input data into training data and validation data
+The trained model will be used on the test data
+
+
+```{r}
+set.seed(100)
+train_labels=createDataPartition(y=input_data$Loan_Status,times=1,p=1.0,list=FALSE)
+
+#create training_data
+training_data=input_data[train_labels,c(2:13)] # ignoring the loan_id column
+
+#create validation data
+validation_data=input_data[-train_labels,c(2:13)]
+
+
+```
+
+
+```{r}
+
+fitControl=trainControl(method="repeatedcv",number=5,repeats=3,classProbs = TRUE,summaryFunction = twoClassSummary,search="grid")
+
+
+mtryGrid = expand.grid(ntree = c(10:100)*50,mtry=c(1:11))
+
+# you can put different values for mtry
+rfTune<- train(x = training_data[,c(1:11)],
+               y = training_data$Loan_Status,
+               method = "rf",
+               trControl = fitControl,
+               metric = "Kappa",
+               ntree = 1000,
+               tuneGrid = mtryGrid,
+               importance = TRUE)
+
+
+
+```
+
