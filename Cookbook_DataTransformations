@@ -1,0 +1,167 @@
+---
+title: "DataTransformations_ApplyFamily"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Compendium of functions relating to sapply, lapply and related for data transformations
+
+
+Import required libraries
+
+```{r}
+
+library(MASS)
+
+```
+
+Load required datasets 
+Where possible, assign to variables so that the codes can be reproduced with ease
+
+```{r}
+
+data(Cars93)
+data("iris")
+
+
+```
+
+
+Recipe 1 - Splitting a dataframe volumn based on the values of another column using split function
+
+```{r}
+
+#Example 1 -splitting the MPG.city variable based on the values of the origin column
+MPG_city_by_origin =split(Cars93$MPG.city,Cars93$Origin)
+MPG_city_by_origin #this is a list
+
+#Example 2 -splitting sepal.length variable based on the species column
+Sepal_Length_by_Species =split(iris$Sepal.Length,iris$Species)
+#look at the first element of the list's output
+Sepal_Length_by_Species[1]
+
+```
+
+Recipe 2 - splitting a dataframe column based on values of another column using the unstack function
+
+```{r}
+
+#Example 1 -splitting the MPG.city variable based on the values of the origin column
+MPG_city_by_origin2=unstack(x=Cars93,form =MPG.city ~Origin)
+
+#Example 2 -splitting sepal.length variable based on the species column
+#when the results have similar length, unstack will convert the result to a dataframe
+Sepal_Length_by_Species2 =unstack(x=iris,form=Sepal.Length~Species)
+
+
+```
+
+Recipe 3 - Examples for lapply function, when you want to apply the same function to different elements of a list 
+
+```{r}
+
+#Example1  -we use the list created previously for MPG by origin - and get the mean for each group
+average_MPG_by_origin =lapply(MPG_city_by_origin,mean) #the result is a list 
+average_MPG_by_origin
+
+#Example2 -we use the list created previously for sepal length by species -and get the summary statistics for each group 
+summary_statistics_sepal_length_by_species =lapply(Sepal_Length_by_Species,summary)
+summary_statistics_sepal_length_by_species # the fact that it is list is evident here - each list element is the full set of the summary statistics
+
+```
+
+Recipe 3 - Examples for sapply function - sapply does the same work as lapply, the difference is that it goes one step further and simplifies the result when possible 
+
+
+```{r}
+
+#Example1  -we use the list created previously for MPG by origin - and get the mean for each group
+
+average_MPG_by_origin2 =sapply(MPG_city_by_origin,mean) #the result is a list 
+average_MPG_by_origin2 #the result is a numeric vector
+
+
+#Example 2 - calculate the number of elements in each group using the iris dataset 
+Sepal_Length_by_Species_length=sapply(Sepal_Length_by_Species,length)
+Sepal_Length_by_Species_length # again, saply has simplified this is a numeric vector
+
+#Example 3 - for each group, we get the same. sapply converts this result to a matrix
+Sepal_Length_by_Species_range =sapply(Sepal_Length_by_Species,range)
+Sepal_Length_by_Species_range #this is now a matrix
+
+```
+
+Recipe 4 - Exmaples for  apply function - when you want to apply same function to every row or column
+
+```{r}
+
+#for example - creating a 4 by 5 matrix 
+example_matrix=matrix(data=c(1:20),nrow=4,ncol=5,byrow=TRUE)
+example_matrix # show matrix output 
+
+#example 1 - use apply to get the row means
+apply(example_matrix,1,mean) #result is a numeric vector
+
+#example 2- use apply to get the column means
+apply(example_matrix,2,mean)
+
+#example 3- use apply to get the range for the data in rows. the result will be a matrix
+apply(example_matrix,1,range)
+
+#example 4 - using the apply function on a dataframe, need to take care since dataframe will be converted to matrix. so use only columns of the same data type 
+apply(iris[,c(1:4)],2,summary) # here we get summary statistics for each column
+
+```
+
+Recipe 5 - use lapply function or sapply function to the columns of a dataframe 
+
+```{r}
+
+#Example -using lapply for checking the class of each column of a dataframe
+lapply(iris,class)
+
+#Example -using lapply for checking summary statistics of each column of dataframe
+lapply(iris,summary)
+
+#Example - using sapply to get the means for each column of dataframe
+sapply(iris[,c(1:4)],mean)  # result is simplified to a vector
+
+```
+
+
+Recipe 5 - apply same function to groups of data : Example for tapply function 
+```{r}
+
+#Example using iris data -sepal length as column and species as grouping vector
+tapply(iris$Sepal.Length,iris$Species,mean)  #getting means for each species type
+
+#Example using Cars93 data - get the MPG.city average by the origin as grouping vector
+tapply(Cars93$MPG.city,Cars93$Origin,mean)
+
+#Example Cars93 data - get the MPG.city range by the origin as grouping vector 
+tapply(Cars93$MPG.city,Cars93$Origin,range) # result is an array!
+
+#Anothoer example using Cars93 dataset -getting counts for each grouping factor
+tapply(Cars93$Cylinders,Cars93$Type,length)
+
+
+```
+
+Recipe 6 - using the "By" function to get results by groups of data 
+
+```{r}
+
+#Example 1 - getting the summary stats for the sepal length function grouped by species
+by(iris$Sepal.Length,iris$Species,summary) # this result is of class "by"
+
+#Example 2 -getting the range of MPG city for each level of origin 
+by(Cars93$MPG.city,Cars93$Origin,range)
+
+#Example 3 - by can be used to do more complicated stuff. here we built a linear regression model for each species type in iris 
+regression_by_species =by(iris,iris$Species,function(df) lm(Sepal.Length~Sepal.Width+Petal.Length+Petal.Width,data=df))
+
+
+```
+
