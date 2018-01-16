@@ -1,0 +1,47 @@
+##Notes
+dplyr aggregate functions
+
+dplyr provides several helpful aggregate functions of its own, in addition to the ones that are already defined in R. These include:
+
+first(x) - The first element of vector x.
+last(x) - The last element of vector x.
+nth(x, n) - The nth element of vector x.
+n() - The number of rows in the data.frame or group of observations that summarise() describes.
+n_distinct(x) - The number of unique values in vector x.
+Next to these dplyr-specific functions, you can also turn a logical test into an aggregating function with sum() or mean(). A logical test returns a vector of TRUE's and FALSE's. When you apply sum() or mean() to such a vector, R coerces each TRUE to a 1 and each FALSE to a 0. sum() then represents the total number of observations that passed the test; mean() represents the proportion.
+
+##Instructions
+Print out a summary of hflights with the following variables:
+n_obs: the total number of observations,
+n_carrier: the total number of carriers,
+n_dest: the total number of destinations,
+aa, a tbl with all flights flown by American Airlines, is already available.
+Print out a summary of aa with the following variables:
+n_flights: the total number of flights (each observation is a flight),
+n_canc: the total number of cancelled flights,
+avg_delay: the average arrival delay of flights whose delay is not NA (na.rm = TRUE).
+
+##Code
+
+```{r}
+# hflights is available with full names for the carriers
+
+# Generate summarizing statistics for hflights
+summarise(hflights,
+          n_obs = n(),
+          n_carrier = n_distinct(UniqueCarrier),
+          n_dest = n_distinct(Dest)
+          )
+
+# All American Airline flights
+aa <- filter(hflights, UniqueCarrier == "American")
+
+# Generate summarizing statistics for aa 
+summarise(aa,
+          n_flights=n(),
+          n_canc=sum(Cancelled==1),
+          avg_delay=mean(ArrDelay,na.rm=TRUE)
+          )
+
+```
+
