@@ -1,0 +1,132 @@
+#Demonstration app for how a CA script can look like
+#Option to run one of several queries.
+#Tab 1 to show the table output of the query
+#Tab 2 to show a visualization related to the query
+
+library(shiny)
+library(dplyr)
+library(knitr)
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("Demo App using hflights data"),
+   
+   #Uploading the input file -hflights data
+   fileInput(inputId = "file1",label="Upload the input data",
+             multiple=FALSE,accept=c(".csv",".xlsx")
+   ),
+   
+   # options for queries will be provided now
+   sidebarLayout(
+      sidebarPanel(
+        #Select one of the queries to run
+        selectInput(inputId = "Query","select query to execute from the  list",
+                    choices=c("Find number of diverted flights in each month",
+                              "Find number of cancelled flights in each month")
+        )
+         
+      ),
+      
+      # Show a plot of the generated distribution
+      mainPanel(
+        
+        #see in the first tab -we show text output and table output in same tab
+        #the corresponding chart is shown in the third tab
+        tabsetPanel(type = "tabs",
+                    tabPanel("Query Results", verbatimTextOutput("query_used"),tableOutput("table")),
+                    tabPanel("Visualization", plotOutput("plot")
+                    )
+        )
+         
+      )
+   )
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+  
+   #output1a - printing the query name that has been selected
+   output$query_used=renderText({input$Query})
+   
+   #outpu1b - table result of the query is done here
+   #data uploaded needs to be assigned to a dataframe input_data
+   #that dataframe is then called and manipulated 
+   #to give the results required
+   
+   #the query selection is used as a reactive expression - because the output table depends on the type 
+   #of the query selected from the select options
+   
+   
+   x=reactive({input$Query})
+   
+   #another reactive expression - the result set -to perform the corresponding query and get the result
+   
+   
+   result_set=reactive(
+     {
+       
+       req(input$file1)
+       input_data=read.csv(file=input$file1$datapath,header=TRUE)
+       
+       if (x() =="Find number of diverted flights in each month")
+       {
+         select(input_data,Month,Diverted)%>%
+           filter(Diverted==1)%>%
+           group_by(Month)%>%
+           summarise(number_diverted=n())
+         
+         
+       }
+       else 
+       {
+         select(input_data,Month,Cancelled)%>%
+           filter(Cancelled==1)%>%
+           group_by(Month)%>%
+           summarise(number_cancelled=n())
+         
+         
+       }
+       
+       
+     }
+     
+     
+     
+   )
+   
+   
+   #show output - render the reactive expression as a table
+   output$table=renderTable(
+     
+     {
+       (result_set())
+     }
+       
+       )
+   
+  
+   #show output - render the reactive expression's components as a chart
+   #result_set() is a tbl_df - we need to use dplyr's pull command to extract vectors and then plot
+   #otherwise, the plotting method is deemed as not valid
+   output$plot =renderPlot(
+     
+     {
+       #set x and y variable - they need to be pulled using dplyr pull
+       x_variable =pull(result_set()[,2])
+       y_variable =pull(result_set()[,1])
+       barplot(height=x_variable,names.arg=y_variable)
+       
+       
+     }
+                           
+                           
+                           
+      )
+   
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
