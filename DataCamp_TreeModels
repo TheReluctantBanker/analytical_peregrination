@@ -4,7 +4,9 @@
 
 ```{r}
 
-library(ipred)
+library(ipred) 
+library(Metrics) # for various metrics 
+library(ROCR)
 
 ```
 
@@ -369,8 +371,530 @@ In the trainControl() function, you can specify many things. We will set: method
 
 ```{r}
 
+# Specify the training configuration
+ctrl <- trainControl(method = "cv",     # Cross-validation
+                     number = 5,      # 5 folds
+                     classProbs = TRUE,                  # For AUC
+                     summaryFunction = twoClassSummary)  # For AUC
+
+# Cross validate the credit model using "treebag" method; 
+# Track AUC (Area under the ROC curve)
+set.seed(1)  # for reproducibility
+credit_caret_model <- train(default ~ .,
+                            data = credit_train, 
+                            method = "treebag",
+                            metric = "ROC",
+                            trControl = ctrl)
+
+# Look at the model object
+print(credit_caret_model)
+
+# Inspect the contents of the model list 
+names(credit_caret_model)
+
+# Print the CV AUC
+credit_caret_model$results[,"ROC"]
 
 
+
+```
+
+##Notes
+Generate predictions from the caret model
+
+Generate predictions on a test set for the caret model.
+
+##Instructions
+First generate predictions on the credit_test data frame using the credit_caret_model object.
+After generating test set predictions, use the auc() function from the Metrics package to compute AUC.
+
+##Code
+
+```{r}
+
+# Generate predictions on the test set
+pred <- predict(object = credit_caret_model, 
+                newdata = credit_test,
+                type = "prob")
+
+# Compute the AUC (`actual` must be a binary (or 1/0 numeric) vector)
+auc(actual = ifelse(credit_test$default == "yes", 1, 0), 
+                    predicted = pred[,"yes"])
+
+```
+
+##Notes
+Compare test set performance to CV performance
+
+In this excercise, you will print test set AUC estimates that you computed in previous exercises. These two methods use the same code underneath, so the estimates should be very similar.
+
+The credit_ipred_model_test_auc object stores the test set AUC from the model trained using the ipred::bagging() function.
+The credit_caret_model_test_auc object stores the test set AUC from the model trained using the caret::train() function with method = "treebag".
+Lastly, we will print the 5-fold cross-validated estimate of AUC that is stored within the credit_caret_model object. This number will be a more accurate estimate of the true model performance since we have averaged the performance over five models instead of just one.
+
+On small datasets like this one, the difference between test set model performance estimates and cross-validated model performance estimates will tend to be more pronounced. When using small data, it's recommended to use cross-validated estimates of performance because they are more stable.
+
+##Instructions
+Print the object credit_ipred_model_test_auc.
+Print the object credit_caret_model_test_auc.
+Compare these to the 5-fold cross validated AUC.
+
+##Code
+
+```{r}
+# Print ipred::bagging test set AUC estimate
+print(credit_ipred_model_test_auc)
+
+# Print caret "treebag" test set AUC estimate
+print(credit_caret_model_test_auc)
+                
+# Compare to caret 5-fold cross-validated AUC
+credit_caret_model$results[, "ROC"]
+```
+
+##Notes
+Train a Random Forest model
+
+Here you will use the randomForest() function from the randomForest package to train a Random Forest classifier to predict loan default.
+
+##Instructions
+The credit_train and credit_test datasets (from Chapter 1 & 3) are already loaded in the workspace.
+
+Use the randomForest::randomForest() function to train a Random Forest model on the credit_train dataset.
+The formula used to define the model is the same as in previous chapters -- we want to predict "default" as a function of all the other columns in the training set.
+Inspect the model output.
+
+##Code
+
+
+```{r}
+# Train a Random Forest
+set.seed(1)  # for reproducibility
+credit_model <- randomForest(formula = default ~ ., 
+                             data = credit_train)
+                             
+# Print the model output                             
+print(credit_model)
+
+```
+
+##Notes
+Evaluate out-of-bag error
+
+Here you will plot the OOB error as a function of the number of trees trained, and extract the final OOB error of the Random Forest model from the trained model object.
+
+##Instructions
+The credit_model trained in the previous exercise is loaded in the workspace.
+Get the OOB error rate for the Random Forest model.
+Plot the OOB error rate against the number of trees in the forest.
+
+##Code
+
+```{r}
+
+# Grab OOB error matrix & take a look
+err <- credit_model$err.rate
+head(err)
+
+# Look at final OOB error rate (last row in err matrix)
+oob_err <- err[nrow(err), "OOB"]
+print(oob_err)
+
+# Plot the model trained in the previous exercise
+plot(credit_model)
+
+# Add a legend since it doesn't have one by default
+legend(x = "right", 
+       legend = colnames(err),
+       fill = 1:ncol(err))
+```
+
+##Notes
+Evaluate model performance on a test set
+
+Use the caret::confusionMatrix() function to compute test set accuracy and generate a confusion matrix. Compare the test set accuracy to the OOB accuracy.
+
+##Instructions
+Generate class predictions for the credit_test data frame using the credit_model object.
+Using the caret::confusionMatrix() function, compute the confusion matrix for the test set.
+Compare the test set accuracy reported from the confusion matrix to the OOB accuracy. The OOB error is stored in oob_err, which is already in your workspace, and so OOB accuracy is just 1 - oob_err.
+
+##Code
+
+```{r}
+# Generate predicted classes using the model object
+class_prediction <- predict(object = credit_model,   # model object 
+                            newdata = credit_test,  # test dataset
+                            type = "class") # return classification labels
+                            
+# Calculate the confusion matrix for the test set
+cm <- confusionMatrix(data = class_prediction,       # predicted classes
+                      reference = credit_test$default)  # actual classes
+print(cm)
+
+# Compare test set accuracy to OOB accuracy
+paste0("Test Accuracy: ", cm$overall[1])
+paste0("OOB Accuracy: ", 1 - oob_err)
+
+```
+
+
+##Notes
+Evaluate test set AUC
+
+In Chapter 3, we learned about the AUC metric for evaluating binary classification models. In this exercise, you will compute test set AUC for the Random Forest model.
+
+##Instructions
+Use the predict() function with type = "prob" to generate numeric predictions on the credit_test dataset.
+Compute the AUC using the auc() function from the Metrics package.
+
+##Code
+
+```{r}
+
+# Generate predictions on the test set
+pred <- predict(object = credit_model,
+            newdata = credit_test,
+            type = "prob")
+
+# `pred` is a matrix
+class(pred)
+                
+# Look at the pred format
+head(pred)
+                
+# Compute the AUC (`actual` must be a binary 1/0 numeric vector)
+auc(actual = ifelse(credit_test$default == "yes", 1, 0), 
+    predicted = pred[,"yes"])                    
+
+```
+
+##Notes
+Tuning a Random Forest via mtry
+
+In this exercise, you will use the randomForest::tuneRF() to tune mtry (by training several models). This function is a specific utility to tune the mtry parameter based on OOB error, which is helpful when you want a quick & easy way to tune your model. A more generic way of any Random Forest parameter will be presented in the following exercise.
+
+##Instructions
+Use the tuneRF() function in place of the randomForest() function to train a series of models with different mtry values and examine the the results.
+Note that (unfortunately) the tuneRF() interface does not support the typical formula input that we've been using, but instead uses two arguments, x (matrix or data frame of predictor variables) and y (response vector; must be a factor for classification).
+The tuneRF() function has an argument, ntreeTry that defaults to 50 trees. Set nTreeTry = 500 to train a random forest model of the same size as you previously did.
+After tuning the forest, this function will also plot model performance (OOB error) as a function of the mtry values that were evaluated.
+Keep in mind that if we want to evaluate the model based on AUC instead of error (accuracy), then this is not the best way to tune a model, as the selection only considers (OOB) error.
+
+##Code
+
+```{r}
+# Execute the tuning process
+set.seed(1)              
+res <- tuneRF(x = subset(credit_train, select = -default),
+              y = credit_train$default,
+              ntreeTry = 500)
+               
+# Look at results
+print(res)
+
+# Find the mtry value that minimizes OOB Error
+mtry_opt <- res[,"mtry"][which.min(res[,"OOBError"])]
+print(mtry_opt)
+
+# If you just want to return the best RF model (rather than results)
+# you can set `doBest = TRUE` in `tuneRF()` to return the best RF model
+# instead of a set performance matrix.
+
+```
+
+
+##Notes
+Tuning a Random Forest via tree depth
+
+In Chapter 2, we created a manual grid of hyperparameters using the expand.grid() function and wrote code that trained and evaluated the models of the grid in a loop. In this exercise, you will create a grid of mtry, nodesize and sampsize values. In this example, we will identify the "best model" based on OOB error. The best model is defined as the model from our grid which minimizes OOB error.
+
+Keep in mind that there are other ways to select a best model from a grid, such as choosing the best model based on validation AUC. However, for this exercise, we will use the built-in OOB error calculations instead of using a separate validation set.
+
+##Instructions
+Create a grid of mtry, nodesize and sampsize values.
+Write a simple loop to train all the models and choose the best one based on OOB error.
+Print the set of hyperparameters which produced the best model.
+
+##Code
+
+```{r}
+
+# Establish a list of possible values for mtry, nodesize and sampsize
+mtry <- seq(4, ncol(credit_train) * 0.8, 2)
+nodesize <- seq(3, 8, 2)
+sampsize <- nrow(credit_train) * c(0.7, 0.8)
+
+# Create a data frame containing all combinations 
+hyper_grid <- expand.grid(mtry = mtry, nodesize = nodesize, sampsize = sampsize)
+
+# Create an empty vector to store OOB error values
+oob_err <- c()
+
+# Write a loop over the rows of hyper_grid to train the grid of models
+for (i in 1:nrow(hyper_grid)) {
+
+    # Train a Random Forest model
+    model <- randomForest(formula = default ~ ., 
+                          data = credit_train,
+                          mtry = hyper_grid$mtry[i],
+                          nodesize = hyper_grid$nodesize[i],
+                          sampsize = hyper_grid$sampsize[i])
+                          
+    # Store OOB error for the model                      
+    oob_err[i] <- model$err.rate[nrow(model$err.rate), "OOB"]
+}
+
+# Identify optimal set of hyperparmeters based on OOB error
+opt_i <- which.min(oob_err)
+print(hyper_grid[opt_i,])
+
+```
+
+
+##Notes
+Train a GBM model
+
+Here you will use the gbm() function to train a GBM classifier to predict loan default. You will train a 10,000-tree GBM on the credit_train dataset, which is pre-loaded into your workspace.
+
+Using such a large number of trees (10,000) is probably not optimal for a GBM model, but we will build more trees than we need and then select the optimal number of trees based on early performance-based stopping. The best GBM model will likely contain fewer trees than we started with.
+
+For binary classification, gbm() requires the response to be encoded as 0/1 (numeric), so we will have to convert from a "no/yes" factor to a 0/1 numeric response column.
+
+Also, the the gbm() function requires the user to specify a distribution argument. For a binary classification problem, you should set distribution = "bernoulli". The Bernoulli distribution models a binary response.
+
+##Instructions
+Convert from a "no/yes" factor to a 0/1 numeric response column using the ifelse() function.
+Train a 10,000-tree GBM model.
+
+##Code
+
+```{r}
+
+# Convert "yes" to 1, "no" to 0
+credit_train$default <- ifelse(credit_train$default == "yes", 1,0)
+
+# Train a 10000-tree GBM model
+set.seed(1)
+credit_model <- gbm(formula = default ~ ., 
+                    distribution = "bernoulli", 
+                    data = credit_train,
+                    n.trees = 10000)
+                    
+# Print the model object                    
+print(credit_model)
+
+# summary() prints variable importance
+summary(credit_model)
+
+```
+
+
+##Notes
+Prediction using a GBM model
+
+The gbm package uses a predict() function to generate predictions from a model, similar to many other machine learning packages in R. When you see a function like predict() that works on many different types of input (a GBM model, a RF model, a GLM model, etc), that indicates that predict() is an "alias" for a GBM-specific version of that function. The GBM specific version of that function is predict.gbm(), but for convenience sake, we can just use predict() (either works).
+
+One thing that's particular to the predict.gbm() however, is that you need to specify the number of trees used in the prediction. There is no default, so you have to specify this manually. For now, we can use the same number of trees that we specified when training the model, which is 10,000 (though this may not be the optimal number to use).
+
+Another argument that you can specify is type, which is only relevant to Bernoulli and Poisson distributed outcomes. When using Bernoulli loss, the returned value is on the log odds scale by default and for Poisson, it's on the log scale. If instead you specify type = "response", then gbm converts the predicted values back to the same scale as the outcome. This will convert the predicted values into probabilities for Bernoulli and expected counts for Poisson.
+
+##Instructions
+Generate predictions on the test set, using 10,000 trees.
+Generate predictions on the test set using type = "response" and 10,000 trees.
+Compare the ranges of the two sets of predictions.
+
+##Code
+
+```{r}
+# Since we converted the training response col, let's also convert the test response col
+credit_test$default <- ifelse(credit_test$default == "yes",1, 0)
+
+# Generate predictions on the test set
+preds1 <- predict(object = credit_model, 
+                  newdata = credit_test,
+                  n.trees = 10000)
+
+# Generate predictions on the test set (scale to response)
+preds2 <- predict(object = credit_model, 
+                  newdata = credit_test,
+                  n.trees = 10000,
+                  type = "response")
+
+# Compare the range of the two sets of predictions
+range(preds1)
+range(preds2)
+
+```
+
+##Notes
+Evaluate test set AUC
+
+Compute test set AUC of the GBM model for the two sets of predictions. We will notice that they are the same value. That's because AUC is a rank-based metric, so changing the actual values does not change the value of the AUC.
+
+However, if we were to use a scale-aware metric like RMSE to evaluate performance, we would want to make sure we converted the predictions back to the original scale of the response.
+
+##Instructions
+The preds1 and preds2 prediction vectors from the previous exercise are pre-loaded into the workspace.
+
+Compute AUC of the predictions.
+Compute AUC of the predictions (scaled to response).
+Notice that the AUC is the same!
+
+
+```{r}
+# Generate the test set AUCs using the two sets of preditions & compare
+auc(actual = credit_test$default, predicted = preds1)  #default
+auc(actual = credit_test$default, predicted = preds2)  #rescaled
+```
+
+##Notes
+Early stopping in GBMs
+
+Use the gbm.perf() function to estimate the optimal number of boosting iterations (aka n.trees) for a GBM model object using both OOB and CV error. When you set out to train a large number of trees in a GBM (such as 10,000) and you use a validation method to determine an earlier (smaller) number of trees, then that's called "early stopping". The term "early stopping" is not unique to GBMs, but can describe auto-tuning the number of iterations in an iterative learning algorithm.
+
+##Instructions
+The credit_model object is loaded in the workspace.
+Use the gbm.perf() function with the "OOB" method to get the optimal number of trees based on the OOB error and store that number as ntree_opt_oob.
+Train a new GBM model, this time with cross-validation, so we can get a cross-validated estimate of the optimal number of trees.
+Lastly, use the gbm.perf() function with the "cv" method to get the optimal number of trees based on the CV error and store that number as ntree_opt_cv.
+Compare the two numbers.
+
+##Code
+
+```{r}
+
+# Optimal ntree estimate based on OOB
+ntree_opt_oob <- gbm.perf(object = credit_model, 
+                          method = "OOB", 
+                          oobag.curve = TRUE)
+
+# Train a CV GBM model
+set.seed(1)
+credit_model_cv <- gbm(formula = default ~ ., 
+                       distribution = "bernoulli", 
+                       data = credit_train,
+                       n.trees = 10000,
+                       cv.folds = 2)
+
+# Optimal ntree estimate based on CV
+ntree_opt_cv <- gbm.perf(object = credit_model_cv, 
+                         method = "cv")
+ 
+# Compare the estimates                         
+print(paste0("Optimal n.trees (OOB Estimate): ", ntree_opt_oob))                         
+print(paste0("Optimal n.trees (CV Estimate): ", ntree_opt_cv))
+
+```
+
+##Notes
+OOB vs CV-based early stopping
+
+In the previous exercise, we used OOB error and cross-validated error to estimate the optimal number of trees in the GBM. These are two different ways to estimate the optimal number of trees, so in this exercise we will compare the performance of the models on a test set. We can use the same model object to make both of these estimates since the predict.gbm() function allows you to use any subset of the total number of trees (in our case, the total number is 10,000).
+
+##Instructions
+The ntree_opt_oob and ntree_opt_cv objects from the previous exercise (each storing an "optimal" value for n.trees) are loaded in the workspace.
+
+Using the credit_model loaded in the workspace, generate two sets of predictions:
+
+One using the OOB estimate of n.trees: 3,233 (stored in ntree_opt_oob)
+And the other using the CV estimate of n.trees: 7,889 (stored in ntree_opt_cv)
+
+##Code
+
+```{r}
+# Generate predictions on the test set using ntree_opt_oob number of trees
+preds1 <- predict(object = credit_model, 
+                  newdata = credit_test,
+                  n.trees = ntree_opt_oob)
+                  
+# Generate predictions on the test set using ntree_opt_cv number of trees
+preds2 <- predict(object = credit_model, 
+                  newdata = credit_test,
+                  n.trees = ntree_opt_cv)   
+
+# Generate the test set AUCs using the two sets of preditions & compare
+auc1 <- auc(actual = credit_test$default, predicted = preds1)  #OOB
+auc2 <- auc(actual = credit_test$default, predicted = preds2)  #CV 
+
+# Compare AUC 
+print(paste0("Test set AUC (OOB): ", auc1))                         
+print(paste0("Test set AUC (CV): ", auc2))
+
+```
+
+##Notes
+Compare all models based on AUC
+
+In this final exercise, we will perform a model comparison across all types of models that we've learned about so far: Decision Trees, Bagged Trees, Random Forest and Gradient Boosting Machine (GBM). The models were all trained on the same training set, credit_train, and predictions were made for the credit_test dataset.
+
+We have pre-loaded four sets of test set predictions, generated using the models we trained in previous chapters (one for each model type). The numbers stored in the prediction vectors are the raw predicted values themselves -- not the predicted class labels. Using the raw predicted values, we can calculate test set AUC for each model and compare the results.
+
+##Instructions
+Loaded in your workspace are four numeric vectors:
+
+dt_preds
+bag_preds
+rf_preds
+gbm_preds
+These predictions were made on credit_test, which is also loaded into the workspace.
+
+Apply the Metrics::auc() function to each of these vectors to calculate test set AUC. Recall that the higher the AUC, the better the model.
+
+In this case, we see that the Random Forest performed the best on the test set. With a bit more tuning of the GBM, the performance might be closer to that of the Random Forest. To save time, we only used 2-fold cross-validation to choose the optimal number of trees, but we encourage you to use more folds (at least 5 or 10) in practice. With more folds, you will have a better estimate of the optimal number of trees.
+
+##Code
+
+```{r}
+
+# Generate the test set AUCs using the two sets of predictions & compare
+actual <- credit_test$default
+dt_auc <- auc(actual = actual, predicted = dt_preds)
+bag_auc <- auc(actual = actual, predicted = bag_preds)
+rf_auc <- auc(actual = actual, predicted = rf_preds)
+gbm_auc <- auc(actual = actual, predicted = gbm_preds)
+
+# Print results
+sprintf("Decision Tree Test AUC: %.3f", dt_auc)
+sprintf("Bagged Trees Test AUC: %.3f", bag_auc)
+sprintf("Random Forest Test AUC: %.3f", rf_auc)
+sprintf("GBM Test AUC: %.3f", gbm_auc)
+
+```
+
+##Notes
+Plot & compare ROC curves
+
+We conclude this course by plotting the ROC curves for all the models (one from each chapter) on the same graph. The ROCR package provides the prediction() and performance() functions which generate the data required for plotting the ROC curve, given a set of predictions and actual (true) values.
+
+The more "up and to the left" the ROC curve of a model is, the better the model. The AUC performance metric is literally the "Area Under the ROC Curve", so the greater the area under this curve, the higher the AUC, and the better-performing the model is.
+
+##Instructions
+The ROCR package can plot multiple ROC curves on the same plot if you plot several sets of predictions as a list.
+
+The prediction() function takes as input a list of prediction vectors (one per model) and a corresponding list of true values (one per model, though in our case the models were all evaluated on the same test set so they all have the same set of true values). The prediction() function returns a "prediction" object which is then passed to the performance() function.
+The performance() function generates the data necessary to plot the curve from the "prediction" object. For the ROC curve, you will also pass along two measures, "tpr" and "fpr".
+Once you have the "performance" object, you can plot the ROC curves using the plot() method. We will add some color to the curves and a legend so we can tell which curves belong to which algorithm.
+
+
+##Code
+
+```{r}
+
+# List of predictions
+preds_list <- list(dt_preds, bag_preds, rf_preds, gbm_preds)
+
+# List of actual values (same for all)
+m <- length(preds_list)
+actuals_list <- rep(list(credit_test$default), m)
+
+# Plot the ROC curves
+pred <- prediction(preds_list, actuals_list)
+rocs <- performance(pred, "tpr", "fpr")
+plot(rocs, col = as.list(1:m), main = "Test Set ROC Curves")
+legend(x = "bottomright", 
+       legend = c("Decision Tree", "Bagged Trees", "Random Forest", "GBM"),
+       fill = 1:m)
 
 ```
 
