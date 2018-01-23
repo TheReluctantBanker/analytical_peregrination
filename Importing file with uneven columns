@@ -1,0 +1,54 @@
+## Recipe for importing a data file when the rows have uneven number of columns!
+
+#### Load any libraries required
+
+```{r}
+library(knitr)
+
+```
+
+
+#### Creating some dummy data
+
+```{r}
+
+row_1 ='apple|banana|orange'
+row_2 ='apple|banana'
+row_3='apple|banana|orange|pomgranate'
+row_3='apple|banana|grapes|orange|cherry|strawberry'
+rows=c(row_1,row_2,row_3)
+
+#now write these character vectors to a file - as lines of text
+#write a vector, then append the succeeding vectors
+
+#set the file directory and file name
+file_directory ="C://Users//sudha//Documents//R//Samples//Practice_Compendium"
+file_name ="data.txt"
+
+fileConn =paste0(file_directory,"//",file_name)
+
+writeLines(rows,fileConn) # gets written in row after row
+
+
+```
+
+#### Now we read this file having rows with uneven number of columns and then read them into a proper dataframe
+
+```{r}
+#first count what is the maximum number of possible fields based on the data in the file
+num_fields = max(count.fields(file=fileConn,sep="|"))
+num_fields # maximum is 6 fields!
+
+```
+
+#### Now import the data using read.table with appropriate arguments to enable proper reading
+
+```{r}
+#importing data using read.table
+imported_data =read.table(file=fileConn,col.names=paste0('V',seq_len(num_fields)),fill=TRUE,sep='|')
+
+#check results
+kable(imported_data) # fields have got imported correctly
+
+```
+
