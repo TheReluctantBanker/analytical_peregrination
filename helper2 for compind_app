@@ -1,0 +1,25 @@
+#this is helper script 2 for doing the BOD technique
+
+library(Compind)
+
+BOD_technique=function(input_data_for_BOD)
+  
+  
+{
+  
+  #code for executing the BOD techique is in this script
+  #in this dummy template -the input data for the BOD technique has 191 columns
+  #replace it with the actual dimensions of the operations risk dataset 
+  
+  results=ci_bod(x=input_data_for_BOD[,c(2:189)],indic_col = c(1:188))
+  
+  #appeding the ci_bod_est value to the input data frame and returning it
+  input_data_for_BOD$CompositeIndicator=results$ci_bod_est
+  
+  #add a second column - as a categorical variable having the indicator range label
+  #ranges to consider are <=0.25, 0.26-0.50, 0.51-0.75, > 0.75
+  #can use the mutate and case_when statement get the derived column
+  
+  return(input_data_for_BOD)
+  
+}
