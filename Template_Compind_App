@@ -1,0 +1,114 @@
+#Template of the app for doing the BOD technique
+
+
+source("helper1.R")
+source("helper2.R")
+
+library(shiny)
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("Template app for running BOD technique"),
+   
+   #step 1 - upload the three input files 
+   #Uploading the input file1
+   fileInput(inputId = "file1",label="Upload the input data",
+             multiple=FALSE,accept=c(".csv")
+   ),
+   
+   #Uploading the input file2
+   fileInput(inputId = "file2",label="Upload the input data",
+             multiple=FALSE,accept=c(".csv")
+   ),
+   
+   #Uploading the input file3
+   fileInput(inputId = "file3",label="Upload the input data",
+             multiple=FALSE,accept=c(".csv")
+   ),
+   
+   
+      # Sidebar with a slider input for number of bins 
+   sidebarLayout(
+      sidebarPanel(
+         
+      ),
+      
+      # Show a plot of the generated distribution
+      mainPanel(
+         
+        #see in the first tab -we show text output and table output in same tab
+        #the corresponding chart is shown in the third tab
+        tabsetPanel(type = "tabs",
+                    tabPanel("BOD Results", tableOutput("table"))
+                   
+                    )
+        
+      )
+   )
+)
+
+
+# Define server logic required to draw a histogram
+server <- function(input, output) 
+{
+  
+  #using a reactive expression to get the result 
+  
+  result_set =reactive(
+  {
+    
+    #read the input files
+    req(input$file1)
+    file_1=read.csv(file=input$file1$datapath,header=TRUE)
+    
+    req(input$file2)
+    file_2=read.csv(file=input$file2$datapath,header=TRUE)
+    
+    req(input$file3)
+    file_3=read.csv(file=input$file3$datapath,header=TRUE)
+    
+    #use function of helper script 1
+    #get the combined data by calling the feature_creation function from the feature creation helper script
+    input_data_BOD_techique=feature_creation(file_1,file_2,file_3)
+    
+    #now use function of helper script 2
+    #pass the input data created in previous step to the function
+    BOD_results_table=BOD_technique(input_data_BOD_techique)
+    
+  }
+  )
+  
+  #show output - render the reactive expression as a table
+  output$table=renderTable(
+    
+    {
+      (result_set())
+    }
+    
+  )
+  
+  #show visualizations of the result 
+  #visualization 1 is bar chart of the 
+  output$plot =renderPlot(
+    
+    {
+      #set x and y variable - they need to be pulled using dplyr pull
+      x_variable =pull(result_set()[,2])
+      y_variable =pull(result_set()[,1])
+      barplot(height=x_variable,names.arg=y_variable)
+      
+      
+    }
+    
+    
+    
+  )
+  
+  
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
