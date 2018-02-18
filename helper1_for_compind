@@ -1,0 +1,27 @@
+#helper function which takes in three data frames as incoming arguments
+#cleans, transforms, creates features for each data frame
+#combines the result and returns one data frame
+
+#load required libraries
+library(dplyr)
+library(tidyverse)
+library(sqldf)
+
+#function name is feature_creation
+#function takes in three incoming arguments - each of which is a data frame
+#one for incidents data, one for issues & actions data, one for KRI data
+
+feature_creation= function (data_1,data_2,data_3)
+{
+  
+  
+ # all the complicated, detailed data cleaning tasks on each of the three input  files should be done in succession
+ #steps to do here
+#clean the files
+  #do feature engineering
+  #create feature files - then write them to the app folder
+  #then combine the features - this file is the input file for the BOD techique -and return this
+  
+ combined_data=cbind(data_1,data_2,data_3) 
+return(combined_data)
+}
