@@ -1,0 +1,66 @@
+---
+title: "GeneralR_Tips"
+author: "Sudha"
+date: "December 27, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Recipes for general usage of R
+Recipes for general stuff like checking version, packages, etc
+
+Recipe 1-to get the details of the current R session info
+Gives details such as the version of R, locale details, details of attached packages
+
+```{r}
+#use the sessionInfo() function to accomplish this
+
+sessionInfo()
+
+```
+
+Recipe 2-Details of working directories
+To check current working directory, to change the current working directory
+
+```{r}
+
+#to check current working directory
+getwd()
+
+#if you want to change the working directory for the current R session 
+new_directory_to_use="C://Users//sudha//Documents//VendorAnalytics_ProjectDirectory_Updations"
+setwd(new_directory_to_use)
+#now check current directory
+getwd()
+
+```
+
+Recipe 3- to check current version of R installed
+
+```{r}
+
+R.version
+
+#another function
+getRversion()
+
+```
+
+Recipe 4- To check the list of currently installed packages
+
+```{r}
+installed.packages()
+
+```
+
+Recipe 5-for a given package, i want to check the version that is being installed and used
+
+```{r}
+
+packageVersion("ggplot2")
+
+```
+
