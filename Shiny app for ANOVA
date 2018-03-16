@@ -1,0 +1,97 @@
+#Example app for running an ANOVA test and visualising results
+#ANOVA is useful when we want to compare the means of more than 2 samples at a time
+
+#Tab1 is is for showing results of the test, whether assumptions are met
+#Tab 2 is for visualizing results -use boxplots to visualize distributions
+
+
+#load required libraries
+library(shiny)
+library(dplyr)
+
+
+# Define UI for application 
+ui <- fluidPage(
+  
+  # Application title
+  titlePanel("Shiny App for ANOVA"),
+  
+  #Uploading the input file -first column should be the grouping factor and second column 
+  #should be the numerical variable
+  fileInput(inputId = "file1",label="Upload the input data",
+            multiple=FALSE,accept=c(".csv",".xlsx")
+  ),
+  
+  # options for queries will be provided now
+  sidebarLayout(
+    sidebarPanel(
+      #There is actually nothing to show here
+      
+      
+    ),
+    
+    # Showing results in different tab sets
+    mainPanel(
+      
+      #see in the first tab -we show text output and table output in same tab
+      #the corresponding chart is shown in the third tab
+      tabsetPanel(type = "tabs",
+                  tabPanel("ANOVA test results", textOutput("results")),
+                  tabPanel("Visualization", plotOutput("plot")
+                  )
+      )
+      
+    )
+  )
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+  
+  # - anova done here and results displayed
+  
+    anova_result=reactive(
+    {
+      
+      req(input$file1)
+      input_data=read.csv(file=input$file1$datapath,header=TRUE)
+      
+      summary(aov(input_data[,2]~input_data[,1]))
+      
+    }
+    
+    
+    
+  )
+  
+  
+  #show output - render the reactive expression as a table
+  output$results=renderPrint(
+    
+    {
+      (anova_result())
+    }
+    
+  )
+  
+  
+  #show output - render the reactive expression's components as a chart
+  #result_set() is a tbl_df - we need to use dplyr's pull command to extract vectors and then plot
+  #otherwise, the plotting method is deemed as not valid
+  output$plot =renderPlot(
+    
+    {
+      #set x and y variable - they need to be pulled using dplyr pull
+      boxplot(input_data[,2]~input_data[,2])
+      
+    }
+    
+    
+    
+  )
+  
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
