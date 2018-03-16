@@ -1,0 +1,57 @@
+##Interval Estimation Techniques recipes
+
+Estimating population parameters based on sample data
+
+####Load packages to use and datasets to use
+
+```{r}
+
+library(MASS)
+library(TeachingDemos) #for using some standard statistical test functions
+data("survey") # dataset to use is called survey
+
+```
+
+#### Recipes follow one after the other
+Point estimate for population mean - simply take the mean using the sample data, the specific column under consideration
+
+```{r}
+#point estimate for height
+height_point_estimate =mean(survey$Height, na.rm=TRUE)
+height_point_estimate
+
+```
+
+Interval estimate for population mean - population variance is known
+
+```{r}
+#assume the known population variance is 9.48
+population_stdev_known =9.48
+
+#formula based approach to get the interval estimate
+
+#step 1 - get the number of valid non-missing observations in sample
+number_observations = length(na.omit(survey$Height))
+number_observations
+
+#step 2- calculate standard error of the mean 
+height_standard_error_mean =population_stdev_known/sqrt(number_observations)
+
+#step 3 - plug in values in the standard formula for lower estimate and upper estimate
+#for that we need the z-values associated with the confidence interval bounds
+#suppose we want 95% confidence intervals - lower bound 2.5% , upper bound 97.5%
+
+#getting the upper tail and lower tail quantiles
+upper_tail=qnorm(0.975)
+lower_tail=qnorm(0.025)
+
+#final step -getting the interval estimate
+height_mean_interval_estimate =height_point_estimate+height_standard_error_mean*c(lower_tail,upper_tail)
+
+
+```
+
+Interval estimate for population mean - population variance is not known
+Process is almost similar to the previous recipe. Only difference is considering the sample standard deviation as estimate for the population standard deviation.
+
+
