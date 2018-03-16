@@ -1,0 +1,177 @@
+---
+title: "Dplyr Compendium"
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Demonstration of various data manipulation functions using dplyr package 
+
+#### Load required packages
+
+```{r}
+library(dplyr)
+
+```
+
+#### Load Data
+
+```{r}
+
+ECB_data =read.csv(file="C://Users//sudha//Documents//R//datasets//EXAMPLE_ECB_DATA//Combined.csv",header=TRUE)
+
+
+```
+
+
+#### Convert dataframe to tibble, glimpse, view tibbles
+
+Recipe -convert a data frame to a tibble for easier manipulation using dplyr package
+Commands -tbl_df ,glimpse 
+
+```{r}
+
+ecb_data=tbl_df(ECB_data)
+
+#tbl_df are easier to work with when using the dplyr package. Easier to fit on the screen
+class(ecb_data)
+
+#getting the basics of the dataset - just like we would a typical dataframe
+dim(ecb_data)
+names(ecb_data)
+str(ecb_data)
+
+#easier to view the data as a tibble now
+ecb_data
+
+#glimpse ecb_data
+glimpse(ecb_data)
+
+#use the View command to view the dataframe in a separate window
+View(ecb_data)
+
+
+```
+
+#### Some initial data cleaning tasks here
+
+```{r}
+
+#cleaning up the column names to eliminate the . in the variable names
+names(ecb_data) =c("Period","Route","Type","Borrower","Amount_USD","Purpose","Maturity_Period")
+#check names again now
+names(ecb_data)
+```
+
+#### Data cleaning involving conversion of variable from one type to another
+
+```{r}
+
+#convert the Period column to date format. Currently it is in stored as a factor
+ecb_data$Period =as.Date(as.character(paste("01",ecb_data$Period,sep="-")),format="%d-%b-%y")
+
+
+
+```
+
+
+#### Examples for use of select verb
+Various ways of using select verb to select columns from the dataset
+select verb helps you select columns from dataset as well as subset dataset in the way you want
+
+```{r}
+#example - when you want to simply select all available columns
+ecb_data %>%
+  select(everything())
+
+
+#example -when you want to select specific columns and display output
+ecb_data%>%
+  select(Period,Maturity_Period,Borrower,Amount_USD)
+
+#example -you can use column positions instead of column names
+ecb_data %>%
+  select(1,2,3)
+
+#example -you can use column positions to exclude
+ecb_data %>%
+  select(-1,-4,-6)
+
+
+#example -when you want all columns after excluding specific column
+ecb_data %>%
+  select(-Period,-Borrower)
+
+#example -when you want to select columns which are in a group of given names
+ecb_data %>%
+  select(one_of("Amount","Amount_USD","Purpose")) # there is no variable called amount - R will issue a warning but still provide result for the other available columns
+
+#example - using the : operator to select all columns in a given range of columns
+ecb_data %>%
+  select(Period:Amount_USD)
+
+#example - using contains to pick column names containing a given string pattern
+ecb_data %>%
+  select(contains("_"))
+
+ecb_data%>%
+  select(contains("te"))
+
+#example - using starts_with to pick columns whose names start with a particular pattern/character
+ecb_data %>%
+  select(starts_with("P"))
+
+#example -using ends_with to pick columns whose names end with particular pattern/character
+ecb_data %>%
+  select(ends_with("er"))
+
+#example -use of regular expressions 
+ecb_data %>%
+  select(matches (".p"))
+
+#example - use of regular expressions
+ecb_data %>%
+  select(matches "^(ri)")
+
+```
+
+
+
+
+
+
+#### Demonstrate mutate verb here for creating new variables from existing variables
+Using the mutate verb to create new variables -creating a variable called quarter
+
+```{r}
+#this code shows how mutate verb can be used for creating new variables. We also make use of conditions
+#if month is in (jan, feb, march) -assign quarter1.
+#if month is in (apr,may,jun) - assign quarter2
+#if month is in (jul,aug,sep) -assign quarter 3
+#if month is in (oct,nov,dec) -assign quarter 4
+
+#here case_when is useful with the mutate verb since multiple conditions have to be tested to create the new variable
+
+ecb_data =ecb_data%>%
+  mutate(Period_Quarter=
+           case_when 
+           (
+              months(Period) %in% c("January","February","March") ~"Quarter1",
+              months(Period) %in% c("April","May","June") ~"Quarter2",
+              months(Period) %in% c("July","August","September") ~"Quarter3",
+              months(Period) %in% c("October","November","December") ~"Quarter3"
+            )
+        )
+
+```
+
+
+
+
+
+
+
+
+
