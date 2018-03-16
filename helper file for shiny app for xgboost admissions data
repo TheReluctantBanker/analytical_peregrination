@@ -1,0 +1,85 @@
+# Admissions Risk Scoring  - Model Results
+
+xgboost_scoring =function(scoring_dataframe)
+{
+  
+  
+
+# load required libraries
+
+library(caret)
+library(xgboost)
+library(Matrix)
+library(readxl)
+library(dplyr)
+
+
+# set some global variables
+
+file_path ="C://Users//sudha//Documents//R//Samples//ReplicationApp"
+input_file="admissions.csv"
+
+
+
+# code chunk for training the xgboost model
+input_data=read.csv(file=paste0(file_path,"//",input_file),header=TRUE,na.strings = "NA")
+
+
+#converting factors to ordered factors where required
+input_data$prestige=as.factor(input_data$prestige)
+
+#recode the admit variable as "Yes" for admit, "No" for not admit
+input_data$admit =as.factor(ifelse(input_data$admit==1,"Yes","No"))
+
+#check structure of data to confirm if all is alrite
+str(input_data) # gre is numeric, gpa is numeric, prestige (university rank) is factor, admit (target) is factor
+
+
+#caret package - train control parameters
+training_control_parameters =trainControl(method="cv",savePredictions = TRUE,classProbs = TRUE,summaryFunction=twoClassSummary)
+
+#xgboost model parameters grid
+parametersGrid =expand.grid(nrounds=100,eta=0.1,max_depth=3,colsample_bytree=0.5,subsample = 0.5,gamma=1,min_child_weight=2)
+
+#have a look at the output of parametersgrid
+parametersGrid
+
+#building the model -i am ignoring records having missing data
+set.seed(1000)
+xgboost_model =train(admit~.,data=input_data,method="xgbTree",trControl=training_control_parameters,tuneGrid=parametersGrid,metric="ROC",na.action=na.pass)
+
+
+#correct some variable roles in the scoring dataframe
+scoring_dataframe$prestige=as.factor(scoring_dataframe$prestige)
+
+# predictions on the scoring data, using the trained xgboost model 
+
+predictions_scoring_data_probabilities=as.data.frame(predict(xgboost_model,newdata=scoring_dataframe,type="prob"))
+
+predictions_scoring_data_labels=as.vector(ifelse(predictions_scoring_data_probabilities[1]>0.5,"No","Yes"))
+
+# Results
+
+
+
+#creating a dataframe of the scoring data + predicted risk class + predicted probability
+
+scoring_results=data.frame(
+  gre =scoring_dataframe$gre,   
+  gpa =scoring_dataframe$gpa,
+  prestige =scoring_dataframe$prestige,    
+  AdmissionLabel =as.factor(predictions_scoring_data_labels),
+  PredictedProbability_of_NoAdmission =round(predictions_scoring_data_probabilities$No*100,2)
+)
+
+
+
+# return the dataframe 
+return(scoring_results)
+
+}
+
+
+
+
+
