@@ -1,0 +1,77 @@
+##### Recipes for dates and times in R
+
+
+#### Load necessary libraries
+
+```{r}
+
+library(lubridate)
+
+```
+
+
+
+#### Converting numbers to dates
+
+Suppose if data that you have has got date having an integer value ( days since unix epoch of 1st Jan 1970), then you need to convert the integer to date
+
+```{r}
+
+date_in_integer_form=12000
+date_in_date_form =as.Date(date_in_integer_form,origin='1970-01-01')
+date_in_date_form
+class(date_in_date_form) #is a date object
+
+```
+
+#### When you want to extract /format dates in specified ways
+
+Recipe for extracting month from a given date
+
+```{r}
+
+#we will use the date_in_date_form created earlier
+
+#now to extract the month from this 
+month(date_in_date_form)
+
+#now to extract the year from this
+year(date_in_date_form)
+
+
+```
+
+
+Recipes for extracting only specific portions from date
+Suppose you have date in YYYY-MM-DD format, but you want to extract only YYYY-MM as DD is not relevant for the analysis that you are doing.
+
+The format function helps you to transform the date and get only the portions required
+
+```{r}
+
+date_example ='1991-12-31' # in YYYY-MM-DD form
+date_YYYY_MM_only =format(as.Date(date_example,"%Y-%m-%d"),"%Y-%m") # first step we are first ensuring that the variable is in date in its default form. we then use format to transform its form.
+date_YYYY_MM_only
+
+
+```
+
+#### When you want to calculate difference between dates/times
+
+Recipe for using the diffitme function which helps you get the difference between two dates in different units
+
+Differences can be obtained in days, weeks, hours, mins, seconds
+
+```{r}
+
+date1='2018-03-02'
+date2='1981-03-02'
+
+date1_formatted=as.Date(date1,"%Y-%m-%d")
+date2_formatted=as.Date(date2,"%Y-%m-%d")
+
+time_difference_days =difftime(time1=date1_formatted,time2=date2_formatted,units='days')
+time_difference_days
+
+```
+
