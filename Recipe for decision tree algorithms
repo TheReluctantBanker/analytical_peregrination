@@ -1,0 +1,54 @@
+---
+title: "DecisionTree_Techniques"
+author: "Sudha"
+date: "December 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+#### Demonstration for different algorithms for building decision trees
+
+Recipe for implementing CART algorithm - using rpart package and using caret package
+Recipe for building tree with default options and then tuning the tree parameters
+
+#### Import required libraries
+
+```{r}
+
+library(datasets) # for using the longley dataset
+library(caret) # we use for data partition into 80% training and 20% test. also train CART using caret
+library(rpart) # for implementing CART using non-caret version
+
+```
+
+#### Import dataset used for practice
+
+```{r}
+data(iris) # classification where target variable is categorical
+data("longley") # classification where target variable is numeric
+
+```
+
+#### CART using rpart package, target variable = categorical
+
+Recipe for implementing CART using the rpart package, target variable is categorical
+
+```{r}
+
+#partition dataset into training data and testing data
+set.seed(100)
+train_labels=createDataPartition(y=iris$Species,times=1,p=0.8,list=FALSE)
+iris_training=iris[train_labels,]
+iris_testing=iris[-train_labels]
+
+#use rpart package to build the CART model
+iris_CART_model =rpart(formula=Species~.,data=iris_training,na.action="na.pass",method="class")
+
+```
+
+
