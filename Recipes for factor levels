@@ -1,0 +1,49 @@
+#### Recipes for working with factor variables
+
+Recipe 1
+Changing the order of levels of a factor. When you want to change the order in which the factor levels appear
+
+Example for ordered factor {small, medium, large}
+Example for unordered factor {pen, pencil, eraser}
+
+When order is not specified, R will use the alphabetical order for ordering the factor levels
+
+```{r}
+
+example_factor=factor(x=c("small", "medium", "large"))
+example_factor
+
+#now to change the levels of the factor small-->medium-->large
+#method 1 - to specify the order of the factor levels explicitly when creating the factor, using the levels #argument
+example_factor=factor(example_factor,levels=c("small","medium","large"))
+example_factor # the levels would have changed now
+
+#method 2 - create an ordered factor
+example_factor2=c("low risk","high risk","medium risk","low risk","high risk","high risk")
+example_factor2=ordered(example_factor2,levels=c("low risk","medium risk","high risk"))
+example_factor2
+
+#another example
+example_factor3=factor(x=c("adolescent","senile","baby", "child", "adult"))
+example_factor3
+
+example_factor3=ordered(example_factor3,levels=c("baby","child","adolescent","adult","senile"))
+example_factor3
+
+#method 3-Another way to change the order is to use relevel() to make a particular level first in the list. #This will not work for ordered factors.
+#it can only help to make a particular level the first level
+
+#you can see that the factor levels are mixed up in the example factor below
+
+
+#lets use the relevel function to correct things - relevel basically  helps to fix the reference level
+sizes = factor(c("small", "large", "large", "small", "medium"))
+sizes 
+#now we just need to make small the first level
+sizes=relevel(sizes,ref="small")
+#check the results
+sizes
+
+
+```
+
