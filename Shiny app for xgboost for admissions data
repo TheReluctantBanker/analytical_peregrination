@@ -1,0 +1,121 @@
+library(shiny)
+source("helper.R")
+
+# Define the fields we want to save from the form
+fieldsAll <- c("gre", 
+               "gpa",
+               "prestige"
+               )
+
+
+saveData <- function(data) {
+  data <- as.data.frame(t(data))
+  if (exists("responses")) {
+    responses <<- rbind(responses, data)
+  } else {
+    responses <<- data
+  }
+  
+  write.csv(responses,"responses.csv",row.names=FALSE)
+}
+
+loadData <- function() {
+  if (exists("responses")) {
+    responses
+  }
+}
+
+
+
+# Define UI for random distribution app ----
+ui <- fluidPage(
+  
+  # App title ----
+  titlePanel("Example -Admission Scoring Model"),
+  
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+    
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+      
+      numericInput("gre", "Enter GRE Score(value between 0 and 800",min = 0, max = 800, 
+                   step = NA,value =0),
+      
+      numericInput("gpa", "Enter GPA (value between 0 and 4)",min = 0, max = 4, 
+                   step = NA,value =0),
+      
+      selectInput("prestige", "Enter the rank of the university -1,2,3 or 4",
+                  choices = c(1,2,3,4),
+                  selected =1) ,
+      
+         actionButton("submit", "Submit") ,
+      
+      fileInput('file1', 'Your inputs have been recorded to the file- Please upload it now for the model to run and give results',
+                accept = c(".csv")
+      )
+      
+      
+      
+    ),
+    
+    # Main panel for displaying outputs ----
+    mainPanel(
+      
+      # Output: Tabset w/ plot, summary, and table ----
+      tabsetPanel(type = "tabs",
+                  tabPanel("Admissions Data Entry ", tableOutput("responses")),
+                  tabPanel("Model Results", tableOutput("results"))
+      )
+      
+    )
+  )
+  )
+
+
+server <- function(input, output) 
+  
+{
+  
+  
+  # Whenever a field is filled, aggregate all form data
+  formData <- reactive({
+    data <- sapply(fieldsAll, function(x) input[[x]])
+    data
+  })
+  
+  # When the Submit button is clicked, save the form data
+  observeEvent(input$submit, {
+    saveData(formData())
+  })
+  
+  # Show the previous responses
+  # (update with current response when Submit is clicked)
+  output$responses <- DT::renderDataTable({
+   input$submit
+  loadData()
+  })    
+  
+  
+  
+  output$results <- renderTable(
+    {
+      
+      df <- read.csv(input$file1$datapath,
+                       header=TRUE)
+      xgboost_scoring(df)
+      
+    }
+  )
+  
+  
+  
+}
+
+
+
+
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
