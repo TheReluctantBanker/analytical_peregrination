@@ -1,0 +1,117 @@
+## Toy example for using the benefit of the doubt approach to build a composite indicator
+
+
+### Import required packages
+
+```{r,message=F,warning=F}
+library(Compind)
+
+
+```
+
+We use the package Compind for building composite indicator
+
+
+### Create toy data 
+
+We create simple toy data for this example
+Dataset has four attributes -headcount(number of people in branch), deposits(amount of deposits held), number of customers,  and ARPU(average revenue per user). Data is fake, just created for this toy example
+
+Hi Sudha,
+first of all have you I suggest also to see the Compind web application @ https://fvidoli.shinyapps.io/compind_app/ ... It's more simple when you want to change the parameter of your initial research ...
+
+
+```{r}
+
+unit=c("A","B","C","D","E")
+HeadCount=c(100,120,170,200,250)
+Number_Customers=c(1200,1500,1700,2000,4000)
+ARPU=c(15.0,16.2,25.0,8.0,10.0)
+
+input_data=data.frame(unit=unit,HeadCount=HeadCount,Number_Customers=Number_Customers,ARPU=ARPU)
+
+```
+
+### Data pre-processing steps - standardization
+
+Have you used the normalise_ci function of the Compind package? you can use several standardization methods ... negative  scaled simple indicators are not allowed in several composite indicators method ... pay attention ...
+
+```{r}
+
+input_data_scaled=scale(x=input_data[,c(2:4)])
+
+# for example ...
+norm = normalise_ci(input_data, c(2:4),
+                                 c("POS","POS","POS"), method=1,z.mean=100, z.std=10)
+
+input_data_scaled = norm$ci_norm
+
+# OR
+
+# for example ...
+norm = normalise_ci(input_data, c(2:4),
+                                 c("POS","POS","POS"), method=2)
+
+input_data_scaled = norm$ci_norm
+
+
+```
+
+### Version 1 of BOD approach using the ci_bod function - weights don't add up to 1
+In this version, we just use the ci_bod function with no thresholds
+We see that the weights DO NOT add up to one in this case ... this function do not produce the pure weights as the ci_bod_constr (see the relative help) but the dual values https://www.courses.psu.edu/for/for466w_mem14/Ch11/HTML/Sec4/ch11sec4_Dual.htm ... for this issue the weights are different. FOR YOUR USE, I THINK IT'S BETTER TO USE CI_BOD_CONSTR ... HOWEVER THANKS FOR YOUR QUESTION, IN THE NEXT VERSION OF THE PACKAGE I'LL IMPROVE AND CLARIFY OUR HELP ... IF YOU READ THE EXAMPLE IN THE CI_BOD FUNCTION HELP YOU CAN FIND A SIMPLE USE OF THE DUAL VALUE (SEE BELOW) 
+
+```{r}
+
+BOD_version_1=ci_bod(x=input_data_scaled,indic_col=c(1:3))
+names(BOD_version_1)
+
+
+
+```
+
+### Version 1 - Look at the results 
+
+The composite score is a number between 0 and 1
+When we look at the weights assigned for each record -we see that the sum of the weights are not
+necessarily 1
+
+```{r}
+#get the composite indicator score results
+BOD_version_1$ci_bod_est
+
+#get the weights assigned for each record
+BOD_version_1$ci_bod_weights
+
+# in the dual approach you can estimate the BoD result in this form:
+BOD_version_1$ci_bod_weights[,1] * input_data_scaled[,1]+
+BOD_version_1$ci_bod_weights[,2] * input_data_scaled[,2]+
+BOD_version_1$ci_bod_weights[,3] * input_data_scaled[,3]
+  
+
+
+```
+
+### Version 2 of BOD approach using the ci_bod_constr function - weights add up to 1
+In this version, we are able to set the lower and upper threshold for the weights
+We see that the weights add up to one in this case
+```{r}
+BOD_version_2=ci_bod_constr(x=input_data_scaled,indic_col=c(1:3),up_w=1.0,low_w=0.0)
+names(BOD_version_2)
+
+```
+
+### Version 2 - Look at the results 
+
+The composite score is a number between 0 and 1
+When we look at the weights assigned for each record -we see that the sum of the weights add to 1
+```{r}
+#get the composite indicator score results
+BOD_version_2$ci_bod_constr_est
+
+#get the weights assigned for each record
+BOD_version_2$ci_bod_constr_weights
+
+
+```
+
