@@ -1,0 +1,88 @@
+## Toy example for using the benefit of the doubt approach to build a composite indicator
+
+
+### Import required packages
+
+```{r,message=F,warning=F}
+library(Compind)
+library(dplyr)
+
+```
+
+We use the package Compind for building composite indicator
+
+
+### Create toy data 
+
+We create simple toy data for this example
+Dataset has four attributes -headcount(number of people in branch), deposits(amount of deposits held), number of customers,  and ARPU(average revenue per user). Data is fake, just created for this toy example
+
+```{r}
+
+unit=c("A","B","C","D","E")
+HeadCount=c(100,120,170,200,250)
+Number_Customers=c(1200,1500,1700,2000,4000)
+ARPU=c(15.0,16.2,25.0,8.0,10.0)
+
+input_data=data.frame(unit=unit,HeadCount=HeadCount,Number_Customers=Number_Customers,ARPU=ARPU)
+
+```
+
+### Data pre-processing steps - standardization
+
+```{r}
+
+input_data_scaled=scale(x=input_data[,c(2:4)])
+
+
+```
+
+### Version 1 of BOD approach using the ci_bod function - weights don't add up to 1
+In this version, we just use the ci_bod function with no thresholds
+We see that the weights DO NOT add up to one in this case
+
+```{r}
+
+BOD_version_1=ci_bod(x=input_data_scaled,indic_col=c(1:3))
+names(BOD_version_1)
+
+
+
+```
+
+### Version 1 - Look at the results 
+
+The composite score is a number between 0 and 1
+When we look at the weights assigned for each record -we see that the sum of the weights are not
+necessarily 1
+
+```{r}
+#get the composite indicator score results
+BOD_version_1$ci_bod_est
+
+#get the weights assigned for each record
+BOD_version_1$ci_bod_weights
+
+```
+
+### Version 2 of BOD approach using the ci_bod_constr function - weights add up to 1
+In this version, we are able to set the lower and upper threshold for the weights
+We see that the weights add up to one in this case
+```{r}
+BOD_version_2=ci_bod_constr(x=input_data_scaled,indic_col=c(1:3),up_w=1.0,low_w=0.0)
+names(BOD_version_2)
+
+```
+
+### Version 2 - Look at the results 
+
+The composite score is a number between 0 and 1
+When we look at the weights assigned for each record -we see that the sum of the weights add to 1
+```{r}
+#get the composite indicator score results
+BOD_version_2$ci_bod_constr_est
+
+#get the weights assigned for each record
+BOD_version_2$ci_bod_constr_weights
+
+```
