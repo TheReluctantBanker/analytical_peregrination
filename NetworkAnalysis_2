@@ -1,0 +1,874 @@
+## Network Analysis using R - Tutorial codes 
+
+
+#Load required libraries
+
+```{r}
+
+library(readr)
+library(igraph)
+library(dplyr)
+library(ggplot2)
+library(ggraph)
+
+```
+
+
+
+
+Explore the dataset
+In this first exercise, you will explore the dataset. You will use the package readr to read the nodes and ties datasets from CSV files into variables in R. For your convenience, the package readr is already loaded into the 
+
+
+Instructions
+Read the nodes and ties into variables with the read_csv() function.
+Print nodesand then ties to explore the nodes and ties in the console. How many nodes and ties are in the dataset?
+
+
+
+
+
+
+```{r}
+
+# read the nodes file into the variable nodes
+nodes <- read_csv(file="C://Users//sudha.sundaram//Documents//R//datasets//nodes.csv")
+
+# read the ties file into the variable ties
+ties <- read_csv(file="C://Users//sudha.sundaram//Documents//R//datasets//ties.csv")
+
+# print nodes
+print(nodes)
+
+# print ties
+print(ties)
+
+
+```
+
+Build and explore the network (part 1)
+In this exercise, you are going to begin using the igraph package. This package lets you analyze data that are represented as networks, which are also called graphs by mathematicians. In particular, you will learn how to build a network from a data frame and explore the nodes and ties of the network.
+
+For your convenience, the package igraph and the data frames nodes and ties are already loaded into the workspace.
+
+Instructions
+Use graph_from_data_frame() to build a network from the data frame ties and save it as g. Print the network to discover the number of nodes and ties.
+Explore the nodes in g with V() and print the number of nodes with vcount()
+Explore the ties in g with E() and print the number of ties with ecount()
+
+
+```{r}
+
+# make the network from the data frame ties and print it
+g <- graph_from_data_frame(ties, directed = FALSE, vertices = nodes)
+g
+
+# explore the set of nodes
+V(g)
+
+# print the number of nodes
+vcount(g)
+
+# explore the set of ties
+E(g)
+
+# print the number of ties
+ecount(g)
+
+```
+
+Build and explore the network (part 2)
+A network built using igraph can have attributes. These include:
+
+Network attributes: properties of the entire network
+Node attributes: properties of nodes
+Tie attributes: properties of ties
+In this exercise, we will explore all these types of attributes.
+
+igraph and the variable g containing the network are already loaded into the workspace.
+
+Give the name "Madrid network" to the network. Then print the network name attribute.
+Add node attribute id and set the id numbers from 1 to the number of nodes of the network. Then print the id attribute.
+Print the tie weight attribute.
+Print the network. Can you spot the different types of attributes?
+
+
+```{r}
+
+# give the name "Madrid network" to the network and print the network `name` attribute
+g$name <- "Madrid Network"
+g$name
+
+# add node attribute id and print the node `id` attribute
+V(g)$id <- 1:vcount(g)
+V(g)$id
+
+# print the tie `weight` attribute
+E(g)$weight
+
+# print the network and spot the attributes
+g
+
+```
+
+Visualize the network (part 1)
+Welcome to the ggraph package! In this course, we will use this package to visualize networks.
+
+The package ggraph extends ggplot2 by using geometries to visualize the nodes (geom_node_point) and ties (geom_edge_link) of a network.
+
+If you already know a bit of ggplot2, you will learn ggraph quickly! For your convenience, ggraph is already loaded into the workspace, the graph theme is set with the function set_graph_style(), and the variable g containing the network is at your disposal.
+
+Instructions
+Visualize the network with the Kamada-Kawai layout and set the transparency of ties (alpha) equal to weight. Can you visually spot the important nodes and ties?
+
+```{r}
+
+# visualize the network with layout Kamada-Kawai
+ggraph(g, layout = "with_kk") + 
+    geom_edge_link(aes(alpha = weight)) + 
+    geom_node_point()
+
+```
+
+
+If you already know a bit of ggplot2, you will learn ggraph quickly! For your convenience, ggraph is already loaded into the workspace, the graph theme is set with the function set_graph_style(), and the variable g containing the network is at your disposal.
+
+Add a label to the nodes that corresponds with their ids using the geom_node_text() geometry and make sure to prevent the labels from overlapping.
+
+
+The network has a typical core-periphery structure, with a densely knitted center and a sparser periphery around it.
+```{r}
+
+# add an id label to nodes
+ggraph(g, layout = "with_kk") +
+  geom_edge_link(aes(alpha = weight)) +
+  geom_node_point()  + 
+  geom_node_text(aes(label = id), repel=TRUE)
+
+
+#can also add name as label to nodes
+# add an id label to nodes
+ggraph(g, layout = "with_kk") +
+  geom_edge_link(aes(alpha = weight)) +
+  geom_node_point()  + 
+  geom_node_text(aes(label = name), repel=TRUE)
+
+
+```
+
+Visualize the network (part 2)
+In the previous exercise, we used a force-directed layout (the Kamada-Kawai layout) to visualize the nodes and ties, in other words, it placed tied nodes at equal distances, so that all ties had roughly the same length.
+
+In this exercise, we will use two alternative layouts: circle, which places nodes on a circle, and grid, which places nodes on a grid.
+
+For your convenience, the variable g containing the network is at your disposal.
+
+Instructions
+Visualize the network with a circular layout. Set tie transparency proportional to weight.
+
+
+```{r}
+
+# visualize the network with circular layout. Set tie transparency proportional to its weight
+ggraph(g, layout = "in_circle") + 
+  geom_edge_link(aes(alpha = weight)) + 
+  geom_node_point()
+
+```
+
+Next, Visualize the network with a grid layout. Set tie transparency proportional to weight.
+A network is unique, but it can be displayed in many different ways!
+
+```{r}
+
+# visualize the network with grid layout. Set tie transparency proportional to its weight
+ggraph(g, layout = "grid") + 
+  geom_edge_link(aes(alpha = weight)) + 
+  geom_node_point()
+
+```
+
+Find the most connected terrorists
+The challenge of this exercise is to spot the most connected terrorists of the train bombing network. We will take advantage of the most simple and popular centrality measure in network science: degree centrality.
+
+You will use both igraph and dplyr, which are already loaded in the workspace. The variables g, which contains the network, and a data frame, nodes, which contains the nodes of the network are also pre-loaded.
+
+Before starting, search on Wikipedia for "Jamal Zougam" to check whether he was involved in the bombings.
+
+Instructions
+Use degree() to compute the degrees of nodes and save them in a variable dgr.
+Mutate the data frame nodes, add the degree variable, and set it to dgr.
+Add a node attribute degree to the network using the variable dgr.
+Arrange the terrorists in the nodes data frame in decreasing order of degree.
+
+
+```{r}
+
+# compute the degrees of the nodes
+dgr <- degree(g)
+
+# add the degrees to the data frame object
+nodes <- mutate(nodes, degree = dgr)
+
+# add the degrees to the network object
+V(g)$degree <-dgr
+
+# arrange the terrorists in decreasing order of degree
+arrange(nodes, -degree)
+
+```
+
+Find the most strongly connected terrorists
+The challenge in this exercise is to spot the most strongly connected terrorists of the train bombing network. We will exploit another centrality measure in network science: strength centrality.
+
+Again, you will take advantage of igraph and dplyr, which are already loaded in the workspace. The variable g, which contains the network, and the data frame nodes, which contains the nodes of the network are at your disposal.
+
+Instructions
+Use strength() to compute the strength of the nodes.
+Mutate the data frame nodes, add the strength variable, and set it to stg.
+Add a node attribute, strength, to the network using the stg variable.
+Arrange the terrorists in decreasing order of strength and degree. Do you notice any correlation between the two?
+
+It appears that there exists a positive association between degree and strength.
+```{r}
+
+# compute node strengths
+stg <- strength(g)
+
+# add strength to the data frame object using mutate
+nodes <- mutate(nodes, strength = stg)
+
+# add the variable stg to the network object as strength
+V(g)$strength <- stg
+
+# arrange terrorists in decreasing order of strength and then in decreasing order of degree
+arrange(nodes,-strength)
+arrange(nodes,-degree)
+
+```
+
+Betweenness of ties
+Betweenness of ties is defined by the number of shortest paths going through a tie.
+
+Ties with high betweenness may have considerable influence within a network by virtue of their control over information passing between nodes. They are also the ones whose removal will most disrupt communication between nodes.
+
+We will compute a weighted version of betweenness, with tie weights inversely proportional to tie strength.
+
+The network g and the data frame ties are at your disposal.
+
+Instructions
+Put the inverse of the tie weights in a variable called dist_weight.
+Compute the weighted tie betweenness with edge_betweenness() and save it to btw.
+Mutate the data frame ties, add the variable betweenness, and set it to btw.
+
+
+```{r}
+# save the inverse of tie weights as dist_weight
+dist_weight <- 1 / E(g)$weight
+
+# compute weighted tie betweenness
+btw <- edge_betweenness(g, weights = dist_weight)
+
+# mutate the data frame ties adding a variable betweenness using btw
+ties <- mutate(ties, betweenness = btw)
+
+# add the tie attribute betweenness to the network
+E(g)$betweenness <- btw
+
+
+
+```
+Find ties with high betweenness
+In the tidy approach to network science, a network is represented with a pair of data frames: one for nodes and one for ties.
+
+In this exercise, we will exploit the dplyr function left_join() to extract information from both the nodes and ties data frames. We need to use a join because the ties data frame contains the IDs of the terrorists, not their names, which are stored in the nodes data frame.
+
+The data frames nodes and ties are already loaded in the workspace.
+
+Instructions
+Join the ties with the nodes using left_join (twice) to find the names of terrorists corresponding to the tied nodes.
+
+
+```{r}
+
+# join ties with nodes
+ties_joined <- ties %>% 
+  left_join(nodes, c("from" = "id")) %>% 
+  left_join(nodes, c("to" = "id")) 
+
+
+#next -Select only the relevant variables: ids and names of tied terrorists and betweenness.
+
+# select only relevant variables and save to ties
+ties_selected <- ties_joined %>% 
+  select(from, to, name_from = name.x, name_to = name.y, betweenness)
+
+#next -Finally, arrange the ties in decreasing order of betweenness.
+arrange(ties_selected, -betweenness)
+
+```
+
+  
+Visualize node centrality
+In this exercise, you will use the ggraph package to visualize the network by making the node size proportional to its centrality (either degree or strength).
+
+This is useful to visually spot the central nodes in the network. Are these nodes part of the central core or in the periphery?
+
+The network g is already loaded in the workspace.
+
+Instructions
+Set network layout to Kamada-Kawai, the tie alpha to weight, and node size to degree.
+
+
+```{r}
+
+# set (alpha) proportional to weight and node size proportional to degree
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(alpha=weight))+ 
+  geom_node_point(aes(size=degree))
+
+# produce the same visualization but set node size proportional to strength
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(alpha = weight)) + 
+  geom_node_point(aes(size = strength))
+
+```
+
+Visualize tie centrality
+In this exercise, you will use the ggraph package again, but this time you will visualize the network by making tie size proportional to tie betweenness centrality.
+
+Can you visually spot the central ties in the network topology? Recall that high betweenness ties typically act as bridges between different communities of the network.
+
+Next, we will add degree centrality to visualize important nodes.
+
+The network g is already loaded in the workspace.
+
+Instructions
+Use ggraph to visualize the network with the Kamada-Kawai layout ("with_kk"). Set the tie transparency using the alpha argument proportional to tie betweeness.
+
+
+```{r}
+
+# visualize the network with tie transparency proportional to betweenness
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(alpha = betweenness)) + 
+  geom_node_point()
+
+# add node size proportional to degree
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(alpha = betweenness)) + 
+  geom_node_point(aes(size =degree))
+
+```
+
+Filter important ties
+In this exercise, you will use the ggraph package once again, but this time we will filter out ties with small betweenness values and only include ties with a large value of betweenness (larger than the median). This will remove half of the ties from the visualization and leave only the important ties.
+
+The network g is already loaded in the workspace.
+
+Instructions
+Find median betweenness using median().
+Use ggraph to visualize the network with only ties with betweenness larger than the median.
+
+
+```{r}
+
+# find median betweenness
+q = median(E(g)$betweenness)
+
+# filter ties with betweenness larger than the median
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(alpha = betweenness, filter = (betweenness > q))) + 
+  geom_node_point() + 
+  theme(legend.position="none")
+
+```
+
+How many weak ties are there?
+Recall that a weak tie as a tie with a weight equal to 1 (the minimum weight).
+
+In this exercise, we are going to use the dplyr function group_by() to group ties by their weights and the summarise() function to count them. Hence, we are going to discover how many weak ties there are in the network.
+
+The ties data frame is loaded in the workspace.
+
+Instructions
+Use group_by() to group ties by their weight.
+Use summarise(), n(), and nrow() to find the total number of ties and calculate the percentage of weak ties.
+
+Finally arrange() the groups by decreasing order of the number of ties.
+
+```{r}
+
+# find number and percentage of weak ties
+#88% of the network ties are weak, quite an impressive share!
+ties %>%
+  group_by(weight) %>%
+  summarise(number = n(), percentage = n()/nrow(ties)) %>%
+  arrange(-number)
+
+```
+
+Visualize the network highlighting weak ties
+In this exercise, we use the ggraph package to visualize weak and strong ties in different colors. It is useful to have an immediate visual perception of the importance of weak ties in a network.
+
+The ties data frame and the network g are already loaded in the workspace for your convenience.
+
+Instructions
+Build a Boolean vector named weakness that, for each tie, contains TRUE if the tie is weak (has weight equal to 1) and FALSE otherwise. Take advantage of function E() on the weight variable of the network.
+Use sum() to check that weakness contains the correct number of weak ties (recall that there are 214 weak ties).
+Visualize the network with ggraph() by setting the tie color to weakness.
+
+
+```{r}
+
+# build vector weakness containing TRUE for weak ties
+weakness <-E(g)$weight == 1
+
+# check that weakness contains the correct number of weak ties
+sum(weakness)
+
+# visualize the network by coloring the weak and strong ties
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(color = weakness)) + 
+  geom_node_point()
+
+```
+
+Visualize the sub-network of weak ties
+In this exercise, we will use ggraph again to visualize the sub-network containing only the weak ties. We will use the aesthetic filter to filter the ties.
+
+The network g and the Boolean vector weakness are already loaded in the workspace for your convenience.
+
+Instructions
+Visualize the network with only weak ties using the filter aesthetic set to the weakness variable.
+Set the global transparency, alpha, to 0.5 for all ties.
+
+
+```{r}
+# visualize the network with only weak ties using the filter aesthetic
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(filter=weakness), alpha = 0.5) + 
+  geom_node_point()
+
+```
+
+Visualizing connection patterns
+We use a scatter plot to visualize the ties between nodes in a network. The idea is to draw a point in the plot at position (x, y) if there is a tie that connects the nodes x and y. We use different colors for the points to distinguish the connection weights.
+
+The resulting visualization is useful to detect similar connection patterns. If two rows (or columns) of the plot are similar, then the two corresponding nodes have similar tie patterns to other nodes in the network.
+
+The ties data frame is already loaded in the workspace.
+
+Instructions
+Mutate the ties data frame by swapping the variables from and to (use a temporary variable temp) and assign the result to ties_mutated
+
+```{r}
+# mutate ties data frame by swapping variables from and to 
+ties_mutated <- mutate(ties, temp = to, to = from, from = temp) %>% select(-temp)
+
+#Append the ties_mutated data frame to the ties data frame using the rbind() function and save it to ties
+ties <- rbind(ties, ties_mutated)
+
+# use a scatter plot to visualize node connection patterns in ties setting color aesthetic to weight
+ggplot(ties, aes(x = from, y = to, color = factor(weight))) +
+  geom_point() +
+  labs(color = "weight")
+
+```
+
+The adjacency matrix (part 1)
+The adjacency matrix is a mathematical representation of a network. It is like a square table with rows and columns.
+
+The cells of the matrix, called entries, are the intersection of rows and columns. For instance, entry (2,3) in the matrix corresponds to the cell at row 2 and column 3.
+
+The encoding of the network in a matrix is as follows: we number each node with the integers from 1 to n, then we put a 1 in the entry if there is a tie between the x and y of the network, and we put a 0 if there is no tie.
+
+Instructions
+Get the weighted adjacency matrix of the network with the as_adjacency_matrix() function and assign it to the variable A
+Print the first row and first column of A
+Print a sub-matrix of the first 6 rows and columns of A. Is the matrix symmetric? Why?
+The sub-matrix is symmetric since the ties are undirected
+
+
+```{r}
+
+# get the weighted adjacency matrix
+A <- as_adjacency_matrix(g, attr = "weight", sparse = FALSE, names = FALSE)
+
+# print the first row and first column of A
+A[1,]
+A[,1]
+
+# print submatrix of the first 6 rows and columns
+A[c(1:6),c(1:6)]
+
+```
+
+The adjacency matrix (part 2)
+The adjacency matrix encodes the structure of the network, that is nodes and ties. It can be manipulated with matrix algebra operations to obtain useful insights about the network, including centrality measures.
+
+In this exercise, we use the adjacency matrix to compute, once again, the node degrees and node strengths. The adjacency matrix A is loaded in the workspace.
+
+Instructions
+Obtain a vector of node strengths using the weighted adjacency matrix A
+Build a Boolean matrix B from the weighted matrix A: a 1 entry in B corresponds to a positive entry in B, while a 0 entry in B corresponds to a 0 entry in A
+Obtain a vector of node degrees using the Boolean matrix B
+
+
+```{r}
+
+# obtain a vector of node strengths
+rowSums(A)
+
+# build a Boolean (0/1) matrix from the weighted matrix A
+B <- A>0
+
+# obtain a vector of node degrees using the Boolean matrix
+rowSums(B)
+
+```
+
+Computing Pearson similarity
+In this exercise, we will explore Pearson similarity to find similarities between the nodes in the network.
+
+The general idea is to associate each node with its column in the adjacency matrix. The similarity of two nodes is then measured as the Pearson correlation coefficient between the node columns.
+
+Recall that the Pearson correlation coefficient runs from -1, or maximum dissimilarity, to 1, maximum similarity, and values close to 0 indicate no correlation, hence they are neither similar nor dissimilar.
+
+Instructions
+Use cor() to compute the Pearson correlation between the columns of the adjacency matrix A and save it to S
+Remove self similarity from S by setting the diagonal of S to 0 with diag()
+Print a summary of the similarities in matrix S with summary()
+Plot a histogram of the similarities in matrix S with hist()
+
+There exists a large number of similarities slightly below zero
+The similarity histogram has a longer right tail, but also has a peak slightly below 0.
+```{r}
+
+# compute the Pearson correlation on columns of A
+S <- cor(A)
+
+# set the diagonal of S to 0
+diag(S) = 0
+
+# print a summary of the similarities in matrix S
+summary(c(S))
+
+# plot a histogram of similarities in matrix S
+hist(c(S), xlab = "Similarity", main = "Histogram of similarity")
+
+```
+
+Explore correlation between degree and strength
+To review Pearson correlation, we correlate centrality measures degree and strength that we computed in the first chapter. Recall that the Pearson correlation coefficient runs from -1 (a perfect negative correlation) to 1 (a perfect positive correlation). Values close to 0 indicate no correlation.
+
+Moreover, we use the ggplot2 package to draw a scatterplot among degree and strength variables adding a regression line.
+
+The data frame nodes, which contains the nodes of the network is at your disposal.
+
+Instructions
+Draw a scatter plot comparing the variables degree and strength of the nodes data frame.
+In the same plot, add a regression line with the geom_smooth geometry.
+Use cor() to compute the correlation between degree and strength in the nodes data frame. What kind of relationship do you observe?
+
+
+```{r}
+
+# Scatter plot of degree and strength with regression line
+ggplot(nodes, aes(x = degree, y = strength)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+# Pearson correlation coefficient 
+cor(nodes$degree, nodes$strength)
+```
+
+Tidy the similarity matrix
+In this exercise, we tidy the similarity matrix into a similarity data frame. Using a similarity data frame is much more handy when analyzing and visualizing the similarities between nodes, as we will see in the following exercises.
+
+We do this in two steps:
+
+First we convert the similarity matrix into a corresponding similarity network using graph_from_adjacency_matrix()
+Then we convert the similarity network into a similarity data frame using as_data_frame()
+The similarity matrix S is at your disposal in the workspace.
+
+
+```{r}
+
+#Build the weighted network associated with S and save it to h
+h <- graph_from_adjacency_matrix(S, mode = "undirected", weighted = TRUE)
+
+
+# convert the similarity network h into a similarity data frame sim_df
+sim_df <- as_data_frame(h, what = "edges")
+
+#Map the similarity data frame to a tibble and save it to sim_tib
+sim_tib <- as_tibble(sim_df)
+
+#Print sim_tib to look at the data in the console
+sim_tib
+
+```
+
+
+Join similarity and nodes data frames
+The similarity data frame sim contains pairs of nodes and their similarities. The terrorist data frame nodes that we built in the previous lessons contains, for each terrorist, the name, degree, and strength.
+
+Here we make use of dplyr to join these two data frames. The resulting data frame will contain named pairs of terrorists with their similarity score and the centrality measures, degree and strength.
+
+The similarity data frame sim is loaded in the workspace for your convenience.
+
+Instructions
+Join the sim and nodes data frames using left_join()
+Print sim2 to the console.
+
+
+```{r}
+
+# left join similarity and nodes data frames and then select and rename relevant variables
+sim2 <- sim %>% 
+  left_join(nodes, c("from" = "id")) %>% 
+  left_join(nodes, c("to" = "id")) %>%
+  select(from, to, name_from = name.x, name_to = name.y, similarity = weight, 
+         degree_from = degree.x, degree_to = degree.y, strength_from = strength.x, strength_to = strength.y)
+  
+# print sim2
+sim2
+
+```
+
+Find most similar and dissimilar pairs
+In this exercise, we use the similarity data frame sim2 we built in the previous exercise, to discover the most similar and least similar pairs of terrorists.
+
+We will also find the most similar and dissimilar pairs of terrorists in the pairs of central terrorists (those with a degree larger than the threshold).
+
+
+```{r}
+
+#Arrange sim2 in decreasing order of similarity. Notice the degrees of the most similar pair.
+sim2 %>% arrange(-similarity)
+
+#Filter sim2 allowing only pairs with a degree at >= 10.
+#Arrange the result in decreasing order of similarity. Which are the most similar terrorists?
+
+sim2 %>%
+filter(degree_from>=10, degree_to>=10) %>%
+arrange(-similarity)
+
+#Repeat the above steps, but this time arrange the terrorists in increasing order of similarity. 
+#Which are the least similar terrorists?
+
+
+
+```
+
+Cluster the similarity network
+In this exercise, we will explore hierarchical clustering to find groups (clusters) of similar terrorists.
+
+The basic idea behind hierarchical clustering is to define a measure of similarity between groups of nodes and then incrementally merge together the most similar groups of nodes until all nodes belongs to a unique cluster. The result of this process is called a dendrogram.
+
+We will use Pearson similarity to determine similarity between nodes and extend it to find similarity between groups using the average-linkage strategy. The Pearson similarity matrix S is already loaded in the workspace.
+
+
+```{r}
+
+# compute a distance matrix
+D <- 1-S
+
+# obtain a distance object 
+d <- as.dist(D)
+
+# run average-linkage clustering method and plot the dendrogram 
+cc <- hclust(d, method = "average")
+plot(cc)
+
+# find the similarity of the first pair of nodes that have been merged 
+S[40,45]
+
+```
+
+Cut the dendrogram
+In hierarchical clustering, each merge of groups of nodes happens sequentially (1, 2, 3, ...) until a unique group containing all nodes is formed.
+
+A dendrogram is a tree structure where every node of the tree corresponds to a particular merging of two node groups in the clustering process. Hence, a dendrogram contains merging information of the entire clustering process.
+
+Here, we freeze the state in which the nodes are grouped into 4 clusters and add the cluster information to the nodes dataset for future analysis. The dendrogram variable cc and the data frame nodes are loaded in the workspace.
+
+Instructions
+Use cutree() to cut the dendrogram in variable cc at 4 clusters and save the result to cls.
+Use mutate() to add a cluster variable and set it to cls.
+Print the nodes data frame and take a look at it.
+
+
+```{r}
+
+# cut the dendrogram at 4 clusters
+cls <-cutree(cc, k = 4)
+
+# add cluster information to the nodes data frame
+nodes <- mutate(nodes, cluster = cls)
+
+# print the nodes data frame
+nodes
+
+```
+
+
+Analyze clusters
+We are finally ready to work on the clusters using the dplyr package. In particular, we will show how to select nodes in a given cluster and how to compute aggregate statistics on the node clusters.
+
+The nodes dataset is ready in the workspace.
+
+Instructions
+Use dplyr verbs on the nodes data frame to output the names of terrorists in the first cluster.
+Write a dplyr statement that outputs the size of the cluster, the average node degree, and the average node strength for each cluster.
+Sort the result by cluster size.
+
+
+```{r}
+
+# output the names of terrorists in the first cluster
+filter(nodes, cluster == 1) %>% 
+    select(name)
+
+# for each cluster select the size of the cluster, the average node degree, and the average node strength and sorts by cluster size
+group_by(nodes, cluster) %>%
+  summarise(size = n(), 
+            avg_degree = mean(degree),
+            avg_strength = mean(strength)) %>%
+  arrange(-size)
+  
+
+```
+
+Visualize the clusters
+Here we will use ggraph to visualize the original network using colored clusters and facet the visualization into four sub-networks, one for each terrorist cell or cluster.
+
+The variable g that contains the network and the nodes data frame are loaded in the workspace.
+
+
+
+
+```{r}
+
+#Add the cluster information in the variable cluster of the nodes data frame to a node attribute called cluster of network g
+
+# add cluster information to the network 
+V(g)$cluster <- nodes$cluster
+
+#Use ggraph to visualize the original network with colored clusters.
+ggraph(g, layout = "with_kk") + 
+    geom_edge_link(aes(alpha = weight), show.legend=FALSE) + 
+    geom_node_point(aes(color = factor(cluster))) +
+    labs(color = "cluster")
+
+#Use ggraph to facet the network with respect to cluster attribute.
+# facet the network with respect to cluster attribute
+ggraph(g, layout = "with_kk") + 
+  geom_edge_link(aes(alpha = weight), show.legend=FALSE) + 
+  geom_node_point(aes(color = factor(cluster))) +
+  facet_nodes(~cluster, scales="free")  +
+  labs(color = "cluster")
+
+```
+
+Basic visualization
+In this final lesson, we will explore the visNetwork package to produce fulfilling interactive network visualizations.
+
+With this package, it is possible to visualize networks, in particular igraph networks, and interact with them, by clicking, moving, zooming and much more.
+
+In this first exercise, we will use basic steps to visualize and explore our terrorism network g, which is loaded in the workspace.
+
+Make sure to enjoy the live networks by interacting with them: click on a node, move a node, move the entire network, zoom in and out!
+
+
+```{r}
+
+#Use toVisNetworkData() to convert g to VisNetwork format.
+# convert igraph to visNetwork
+data <- toVisNetworkData(g)
+
+# print head of nodes and ties
+head(data$nodes)
+head(data$edges)
+
+#Visualize the network with visNetwork() using the nodes and edges of data. Recall that edges is another word for ties.
+visNetwork(nodes = data$nodes, edges = data$edges, width = 300, height = 300)
+
+
+```
+
+Change the layout
+It is possible to change the layout of the visualization using the visNetwork() and visIgraphLayout() function calls. Browse the igraph package by typing ?igraph in the console to find out the names of the different layouts.
+
+The data variable containing the visNetwork is loaded in the workspace.
+
+
+```{r}
+
+#Change the layout of the network visualization using the Kamada-Kawai layout.
+# use the Kamada-Kawai layout
+visNetwork(nodes = data$nodes, edges = data$edges, width = 300, height = 300) %>%
+  visIgraphLayout(layout = "layout_with_kk")
+
+
+#try the circular layout
+# use the circle layout
+visNetwork(nodes = data$nodes, edges = data$edges, width = 300, height = 300) %>%
+  visIgraphLayout(layout = "layout_in_circle")
+
+#try the grid layout
+# use the grid layout
+visNetwork(nodes = data$nodes, edges = data$edges, width = 300, height = 300) %>%
+  visIgraphLayout(layout = "layout_on_grid")
+
+```
+
+
+Highlight nearest nodes and ties
+We can also add extra interaction features to our network. Here, we will highlight the nearest nodes and ties when a node is selected.
+
+An interesting thing about visNetwork is the use of pipes (%>%), like in dplyr queries, to add extra layers to the visualization.
+
+The data variable containing the visNetwork is loaded in the workspace.
+
+Instructions
+Use visOptions() with the parameter highlightNearest set to TRUE to highlight the nearest nodes and ties of the selected node.
+After you run the solution, select a node. What changes?
+
+
+```{r}
+
+# highlight nearest nodes and ties of the selected node
+visNetwork(nodes = data$nodes, edges = data$edges, width = 300, height = 300) %>%
+  visIgraphLayout(layout = "layout_with_kk") %>%
+  visOptions(highlightNearest = TRUE) 
+
+```
+
+
+Select nodes and groups of nodes
+Finally, we will select nodes by their names and by the groups they belong to.
+
+The group variable in the nodes data frame we used in the visNetwork representation contains information about which group a node belongs to and is used to select nodes by group. The function toVisNetworkData() converts an igraph network to a visNetwork and reads group information from the color attribute of the igraph network.
+
+The data variable containing the visNetwork and the network g are loaded in the workspace.
+
+
+```{r}
+#Use visOptions() with the parameter nodesIdSelection set to TRUE to select nodes by id.
+# select nodes by id 
+visNetwork(nodes = data$nodes, edges = data$edges, width = 300, height = 300) %>%
+  visIgraphLayout(layout = "layout_with_kk") %>%
+  visOptions(nodesIdSelection = TRUE)
+
+#Set V(g)$color to cluster, call toVisNetworkData() on g, and set selectedBy in visOptions() to group.
+# select by group (cluster)
+visNetwork(nodes = data$nodes, edges = data$edges, width = 300, height = 300) %>%
+  visIgraphLayout(layout = "layout_with_kk") %>%
+  visOptions(selectedBy = "group")
+
+
+
+```
+
