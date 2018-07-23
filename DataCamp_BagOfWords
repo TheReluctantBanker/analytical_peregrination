@@ -1,0 +1,80 @@
+Text Mining - A bag of words approach 
+
+
+Load required packages
+```{r}
+
+library(qdap)
+
+```
+
+Quick taste of text mining
+Sometimes we can find out the author's intent and main ideas just by looking at the most common words.
+
+At its heart, bag of words text mining represents a way to count terms, or n-grams, across a collection of documents. Consider the following sentences, which we've saved to text and made available in your workspace:
+
+text <- "Text mining usually involves the process of structuring the input text. The overarching goal is, essentially, to turn text into data for analysis, via application of natural language processing (NLP) and analytical methods."
+Manually counting the words in the sentences above is a pain! Fortunately, the qdap package offers a better alternative. You can easily find the top 4 most frequent terms (including ties) in text by calling the freq_terms function and specifying 4.
+
+frequent_terms <- freq_terms(text, 4)
+The frequent_terms object stores all unique words and their count. You can then make a bar chart simply by calling the plot function on the frequent_terms object.
+
+plot(frequent_terms)
+
+Instructions
+We've created an object in your workspace called new_text containing several sentences.
+
+Load the qdap package
+Print new_text to the console.
+Create term_count consisting of the 10 most frequent terms in new_text.
+Plot a bar chart with the results of term_count.
+
+
+```{r}
+
+text <- "Text mining usually involves the process of structuring the input text. The overarching goal is, essentially, to turn text into data for analysis, via application of natural language processing (NLP) and analytical methods."
+
+new_text ="DataCamp is the first online learning platform that focuses on building the best learning experience specifically for Data Science. We have offices in Boston and Belgium and to date, we trained over 250,000 (aspiring) data scientists in over 150 countries. These data science enthusiasts completed more than 9 million exercises. You can take free beginner courses, or subscribe for $25/month to get access to all premium courses."
+
+
+# Print new_text to the console
+new_text
+
+# Find the 10 most frequent terms: term_count
+term_count =freq_terms(new_text,10)
+
+# Plot term_count
+plot(term_count)
+
+```
+
+Load some text
+Text mining begins with loading some text data into R, which we'll do with the read.csv() function. By default, read.csv() treats character strings as factor levels like Male/Female. To prevent this from happening, it's very important to use the argument stringsAsFactors = FALSE.
+
+A best practice is to examine the object you read in to make sure you know which column(s) are important. The str() function provides an efficient way of doing this.
+
+If the data frame contains columns that are not text, you may want to make a new object using only the correct column of text (e.g. some_object$column_name).
+
+A word of warning: you'll be working with real tweets from real people in this course, so you may find some mild profanity from time to time.
+
+Instructions
+Create a new object tweets using read.csv() on the file coffee.csv, which contains tweets mentioning coffee. Don't forget to add stringsAsFactors = FALSE!
+Examine the tweets object using str() to determine which column has the text you'll want to analyze.
+Make a new coffee_tweets object using only the text column you identified earlier. To do so, use the $ operator and column name.
+
+
+```{r}
+
+# Import text data
+tweets=read.csv(file="coffee.csv",stringsAsFactors=FALSE)
+
+# View the structure of tweets
+str(tweets)
+
+
+# Isolate text from tweets: coffee_tweets
+coffee_tweets=tweets$text
+
+```
+
+
